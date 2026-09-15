@@ -14,7 +14,7 @@
 #define GET_FLAG_CARRY				((cpu_registers.f & ~(1UL << 4)) >> 4)
 
 
-// I know this is incorrect, since it was fixed in video 2. But leave it for now.
+
 struct gb_cpu_registers {
 	struct {
 		union {
