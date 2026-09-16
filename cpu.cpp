@@ -654,6 +654,7 @@ void cpu_rst_28() // 0xEF
 void cpu_pop_af() // 0xF1
 {
 	cpu_routine_pop_16(cpu_registers.a, cpu_registers.f); // Pop value from stack into AF register pair
+	cpu_registers.f &= 0xF0; // Clear the lower 4 bits of the F register (flags)
 }
 
 void cpu_push_af() // 0xF5
