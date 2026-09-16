@@ -110,3 +110,14 @@
 	SET_FLAG_ZERO(cpu_registers.a == 0);									\
 	core_advance_cpu_clocks(4);												\
 }
+
+#define cpu_routine_sbc_a_8(reg8)											\
+{																			\
+	uint16_t temp = cpu_registers.a - (reg8 + GET_FLAG_CARRY);				\
+	SET_FLAG_SUBTRACT(1);													\
+	SET_FLAG_CARRY((temp & ~0xFF) ? 1 : 0);									\
+	SET_FLAG_ZERO((temp & 0xFF) ? 0 : 1);									\
+	SET_FLAG_HALF_CARRY(((cpu_registers.a ^ reg8 ^ temp) & 0x10) !=0);		\
+	cpu_registers.a = temp;													\
+	core_advance_cpu_clocks(4);												\
+}
