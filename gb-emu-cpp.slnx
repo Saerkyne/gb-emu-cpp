@@ -3,6 +3,6 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="../SDL3-3.4.16/VisualC/SDL/SDL.vcxproj" />
-  <Project Path="test.vcxproj" />
+  <Project Path="../SDL3-3.4.16/VisualC/SDL/SDL.vcxproj" Id="81ce8daf-ebb2-4761-8e45-b71abcca8c68" />
+  <Project Path="gb-emu-cpp.vcxproj" Id="dfc1018b-44d4-4954-8d29-0c4fb37652ee" />
 </Solution>
