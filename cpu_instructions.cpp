@@ -178,12 +178,12 @@ const struct gb_cpu_instruction instructions[256] = {
 	{ "XOR L",			0,		cpu_xor_a_l		},	// 0xAD
 	{ "XOR (HL)",		0,		nullptr			},	// 0xAE
 	{ "XOR A",			0,		cpu_xor_a		},	// 0xAF
-	{ "OR B",			0,		nullptr			},	// 0xB0
-	{ "OR C",			0,		nullptr			},	// 0xB1
-	{ "OR D",			0,		nullptr			},	// 0xB2
-	{ "OR E",			0,		nullptr			},	// 0xB3
-	{ "OR H",			0,		nullptr			},	// 0xB4
-	{ "OR L",			0,		nullptr			},	// 0xB5
+	{ "OR B",			0,		cpu_or_a_b			},	// 0xB0
+	{ "OR C",			0,		cpu_or_a_c		},	// 0xB1
+	{ "OR D",			0,		cpu_or_a_d		},	// 0xB2
+	{ "OR E",			0,		cpu_or_a_e		},	// 0xB3
+	{ "OR H",			0,		cpu_or_a_h		},	// 0xB4
+	{ "OR L",			0,		cpu_or_a_l		},	// 0xB5
 	{ "OR (HL)",		0,		nullptr			},	// 0xB6
 	{ "OR A",			0,		nullptr			},	// 0xB7
 	{ "CP B",			0,		nullptr			},	// 0xB8

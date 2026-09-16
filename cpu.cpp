@@ -516,6 +516,36 @@ void cpu_xor_a() // 0xAF
 	core_advance_cpu_clocks(4); // XOR A takes 4 clock cycles
 }
 
+void cpu_or_a_b() // 0xB0
+{
+	cpu_routine_or_a_8(cpu_registers.b); // OR B register with A register
+}
+
+void cpu_or_a_c() // 0xB1
+{
+	cpu_routine_or_a_8(cpu_registers.c); // OR C register with A register
+}
+
+void cpu_or_a_d() // 0xB2
+{
+	cpu_routine_or_a_8(cpu_registers.d); // OR D register with A register
+}
+
+void cpu_or_a_e() // 0xB3
+{
+	cpu_routine_or_a_8(cpu_registers.e); // OR E register with A register
+}
+
+void cpu_or_a_h() // 0xB4
+{
+	cpu_routine_or_a_8(cpu_registers.h); // OR H register with A register
+}
+
+void cpu_or_a_l() // 0xB5
+{
+	cpu_routine_or_a_8(cpu_registers.l); // OR L register with A register
+}
+
 void cpu_jp_nn() // 0xC3
 {
 	core_advance_cpu_clocks(4); // JP nn takes 16 clock cycles, but we jump 4 per action instead of all at once

@@ -170,4 +170,10 @@ void cpu_xor_a_e();		// 0xAB
 void cpu_xor_a_h();		// 0xAC
 void cpu_xor_a_l();		// 0xAD
 void cpu_xor_a();		// 0xAF
+void cpu_or_a_b();		// 0xB0
+void cpu_or_a_c();		// 0xB1
+void cpu_or_a_d();		// 0xB2
+void cpu_or_a_e();		// 0xB3
+void cpu_or_a_h();		// 0xB4
+void cpu_or_a_l();		// 0xB5
 void cpu_jp_nn();		// 0xC3
