@@ -591,6 +591,11 @@ void cpu_jp_nn() // 0xC3
 	core_advance_cpu_clocks(4);
 }
 
+void cpu_push_bc() // 0xC5
+{
+	cpu_routine_push_16(cpu_registers.bc); // Push BC register pair onto the stack
+}
+
 void cpu_rst_00() // 0xC7
 {
 	cpu_routine_rst_nnnn(0x0000); // Call subroutine at address 0x0000
@@ -599,6 +604,11 @@ void cpu_rst_00() // 0xC7
 void cpu_rst_08() // 0xCF
 {
 	cpu_routine_rst_nnnn(0x0008); // Call subroutine at address 0x0008
+}
+
+void cpu_push_de() // 0xD5
+{
+	cpu_routine_push_16(cpu_registers.de); // Push DE register pair onto the stack
 }
 
 void cpu_rst_10() // 0xD7
@@ -611,6 +621,11 @@ void cpu_rst_18() // 0xDF
 	cpu_routine_rst_nnnn(0x0018); // Call subroutine at address 0x0018
 }
 
+void cpu_push_hl() // 0xE5
+{
+	cpu_routine_push_16(cpu_registers.hl); // Push HL register pair onto the stack
+}
+
 void cpu_rst_20() // 0xE7
 {
 	cpu_routine_rst_nnnn(0x0020); // Call subroutine at address 0x0020
@@ -619,6 +634,11 @@ void cpu_rst_20() // 0xE7
 void cpu_rst_28() // 0xEF
 {
 	cpu_routine_rst_nnnn(0x0028); // Call subroutine at address 0x0028
+}
+
+void cpu_push_af() // 0xF5
+{
+	cpu_routine_push_16(cpu_registers.af); // Push AF register pair onto the stack
 }
 
 void cpu_rst_30() // 0xF7
