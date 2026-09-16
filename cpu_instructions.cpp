@@ -162,12 +162,12 @@ const struct gb_cpu_instruction instructions[256] = {
 	{ "SBC A, L",		0,		cpu_sbc_a_l		},	// 0x9D
 	{ "SBC A, (HL)",	0,		nullptr			},	// 0x9E
 	{ "SBC A, A",		0, 		nullptr 		},	// 0x9F
-	{ "AND B",			0,		nullptr 		},	// 0xA0
-	{ "AND C",			0,		nullptr			},	// 0xA1
-	{ "AND D",			0,		nullptr			},	// 0xA2
-	{ "AND E",			0,		nullptr			},	// 0xA3
-	{ "AND H",			0,		nullptr			},	// 0xA4
-	{ "AND L",			0,		nullptr			},	// 0xA5
+	{ "AND B",			0,		cpu_and_a_b		},	// 0xA0
+	{ "AND C",			0,		cpu_and_a_c		},	// 0xA1
+	{ "AND D",			0,		cpu_and_a_d		},	// 0xA2
+	{ "AND E",			0,		cpu_and_a_e		},	// 0xA3
+	{ "AND H",			0,		cpu_and_a_h		},	// 0xA4
+	{ "AND L",			0,		cpu_and_a_l		},	// 0xA5
 	{ "AND (HL)",		0,		nullptr			},	// 0xA6
 	{ "AND A",			0,		nullptr			},	// 0xA7
 	{ "XOR B",			0,		nullptr			},	// 0xA8

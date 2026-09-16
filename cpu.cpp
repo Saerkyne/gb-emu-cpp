@@ -291,21 +291,6 @@ void cpu_ld_a_hl() // 0x7E
 	cpu_routine_ld_ptr16(cpu_registers.a, cpu_registers.hl); // Load 8-bit value into A from 16-bit memory address in HL
 }
 
-void cpu_jp_nn() // 0xC3
-{
-	core_advance_cpu_clocks(4); // JP nn takes 16 clock cycles, but we jump 4 per action instead of all at once
-	uint32_t temp = memory_bus_read(cpu_registers.pc++); // Read low byte of address
-	cpu_registers.pc &= 0xFFFF; // Ensure PC is 16 bits
-
-	core_advance_cpu_clocks(4);
-	temp |= ((uint32_t)memory_bus_read(cpu_registers.pc++)) << 8; // Read high byte of address
-	cpu_registers.pc &= 0xFFFF; // Ensure PC is 16 bits
-
-	core_advance_cpu_clocks(4);
-	cpu_registers.pc = temp; // Jump to the address
-	core_advance_cpu_clocks(4);
-}
-
 void cpu_ld_hl_b() // 0x70
 {
 	cpu_routine_ld_ptr8(cpu_registers.hl, cpu_registers.b); // Load 8-bit value into register B from 16-bit memory address in HL
@@ -461,6 +446,36 @@ void cpu_sbc_a_l() // 0x9D
 	cpu_routine_sbc_a_8(cpu_registers.l); // Subtract L register and carry flag from A register
 }
 
+void cpu_and_a_b() // 0xA0
+{
+	cpu_routine_and_a_8(cpu_registers.b); // AND B register with A register
+}
+
+void cpu_and_a_c() // 0xA1
+{
+	cpu_routine_and_a_8(cpu_registers.c); // AND C register with A register
+}
+
+void cpu_and_a_d() // 0xA2
+{
+	cpu_routine_and_a_8(cpu_registers.d); // AND D register with A register
+}
+
+void cpu_and_a_e() // 0xA3
+{
+	cpu_routine_and_a_8(cpu_registers.e); // AND E register with A register
+}
+
+void cpu_and_a_h() // 0xA4
+{
+	cpu_routine_and_a_8(cpu_registers.h); // AND H register with A register
+}
+
+void cpu_and_a_l() // 0xA5
+{
+	cpu_routine_and_a_8(cpu_registers.l); // AND L register with A register
+}
+
 void cpu_xor_a() // 0xAF
 {
 	cpu_registers.a = 0; // XOR A with itself results in 0
@@ -469,4 +484,19 @@ void cpu_xor_a() // 0xAF
 	SET_FLAG_CARRY(0); // Clear the carry flag
 	SET_FLAG_ZERO(1); // Set the zero flag since the result is 0
 	core_advance_cpu_clocks(4); // XOR A takes 4 clock cycles
+}
+
+void cpu_jp_nn() // 0xC3
+{
+	core_advance_cpu_clocks(4); // JP nn takes 16 clock cycles, but we jump 4 per action instead of all at once
+	uint32_t temp = memory_bus_read(cpu_registers.pc++); // Read low byte of address
+	cpu_registers.pc &= 0xFFFF; // Ensure PC is 16 bits
+
+	core_advance_cpu_clocks(4);
+	temp |= ((uint32_t)memory_bus_read(cpu_registers.pc++)) << 8; // Read high byte of address
+	cpu_registers.pc &= 0xFFFF; // Ensure PC is 16 bits
+
+	core_advance_cpu_clocks(4);
+	cpu_registers.pc = temp; // Jump to the address
+	core_advance_cpu_clocks(4);
 }
