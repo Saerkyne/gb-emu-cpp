@@ -178,6 +178,8 @@
 	core_advance_cpu_clocks(4);												\
 }
 
+// TODO: check if the second memory bus write should be the low byte. 
+// Original implementation used high byte.
 #define cpu_routine_push_16(reg_high, reg_low) 								\
 {																			\
 	core_advance_cpu_clocks(4);												\
@@ -187,7 +189,18 @@
 	memory_bus_write(cpu_registers.sp, reg_high); 							\
 	core_advance_cpu_clocks(4); 											\
 	cpu_registers.sp--; 													\
-	cpu_registers.sp &= 0xFFFF; 											\
+	cpu_registers.sp &= 0xFFFF;												\
 	memory_bus_write(cpu_registers.sp, reg_high); 							\
 	core_advance_cpu_clocks(4);												\
+}
+
+#define cpu_routine_pop_16(reg_high, reg_low)								\
+{ 																			\
+	core_advance_cpu_clocks(4); 											\
+	reg_low = memory_bus_read(cpu_registers.sp++); 							\
+	cpu_registers.sp &= 0xFFFF; 											\
+	core_advance_cpu_clocks(4); 											\
+	reg_high = memory_bus_read(cpu_registers.sp++); 						\
+	cpu_registers.sp &= 0xFFFF; 											\
+	core_advance_cpu_clocks(4); 											\
 }

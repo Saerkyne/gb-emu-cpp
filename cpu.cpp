@@ -576,6 +576,11 @@ void cpu_cp_a_l() // 0xBD
 	cpu_routine_cp_a_8(cpu_registers.l); // Compare A register with L register
 }
 
+void cpu_pop_bc() // 0xC1
+{
+	cpu_routine_pop_16(cpu_registers.b, cpu_registers.c); // Pop value from stack into BC register pair
+}
+
 void cpu_jp_nn() // 0xC3
 {
 	core_advance_cpu_clocks(4); // JP nn takes 16 clock cycles, but we jump 4 per action instead of all at once
@@ -606,6 +611,11 @@ void cpu_rst_08() // 0xCF
 	cpu_routine_rst_nnnn(0x0008); // Call subroutine at address 0x0008
 }
 
+void cpu_pop_de() // 0xD1
+{
+	cpu_routine_pop_16(cpu_registers.d, cpu_registers.e); // Pop value from stack into DE register pair
+}
+
 void cpu_push_de() // 0xD5
 {
 	cpu_routine_push_16(cpu_registers.de); // Push DE register pair onto the stack
@@ -621,6 +631,11 @@ void cpu_rst_18() // 0xDF
 	cpu_routine_rst_nnnn(0x0018); // Call subroutine at address 0x0018
 }
 
+void cpu_pop_hl() // 0xE1
+{
+	cpu_routine_pop_16(cpu_registers.h, cpu_registers.l); // Pop value from stack into HL register pair
+}
+
 void cpu_push_hl() // 0xE5
 {
 	cpu_routine_push_16(cpu_registers.hl); // Push HL register pair onto the stack
@@ -634,6 +649,11 @@ void cpu_rst_20() // 0xE7
 void cpu_rst_28() // 0xEF
 {
 	cpu_routine_rst_nnnn(0x0028); // Call subroutine at address 0x0028
+}
+
+void cpu_pop_af() // 0xF1
+{
+	cpu_routine_pop_16(cpu_registers.a, cpu_registers.f); // Pop value from stack into AF register pair
 }
 
 void cpu_push_af() // 0xF5
