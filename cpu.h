@@ -176,4 +176,10 @@ void cpu_or_a_d();		// 0xB2
 void cpu_or_a_e();		// 0xB3
 void cpu_or_a_h();		// 0xB4
 void cpu_or_a_l();		// 0xB5
+void cpu_cp_a_b();		// 0xB8
+void cpu_cp_a_c();		// 0xB9
+void cpu_cp_a_d();		// 0xBA
+void cpu_cp_a_e();		// 0xBB
+void cpu_cp_a_h();		// 0xBC
+void cpu_cp_a_l();		// 0xBD
 void cpu_jp_nn();		// 0xC3

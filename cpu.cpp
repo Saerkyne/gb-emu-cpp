@@ -546,6 +546,36 @@ void cpu_or_a_l() // 0xB5
 	cpu_routine_or_a_8(cpu_registers.l); // OR L register with A register
 }
 
+void cpu_cp_a_b() // 0xB8
+{
+	cpu_routine_cp_a_8(cpu_registers.b); // Compare A register with B register
+}
+
+void cpu_cp_a_c() // 0xB9
+{
+	cpu_routine_cp_a_8(cpu_registers.c); // Compare A register with C register
+}
+
+void cpu_cp_a_d() // 0xBA
+{
+	cpu_routine_cp_a_8(cpu_registers.d); // Compare A register with D register
+}
+
+void cpu_cp_a_e() // 0xBB
+{
+	cpu_routine_cp_a_8(cpu_registers.e); // Compare A register with E register
+}
+
+void cpu_cp_a_h() // 0xBC
+{
+	cpu_routine_cp_a_8(cpu_registers.h); // Compare A register with H register
+}
+
+void cpu_cp_a_l() // 0xBD
+{
+	cpu_routine_cp_a_8(cpu_registers.l); // Compare A register with L register
+}
+
 void cpu_jp_nn() // 0xC3
 {
 	core_advance_cpu_clocks(4); // JP nn takes 16 clock cycles, but we jump 4 per action instead of all at once
