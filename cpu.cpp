@@ -168,6 +168,11 @@ void cpu_ld_e_n() // 0x1E
 	cpu_routine_ld_8(cpu_registers.e); // Load 8-bit immediate value into E register
 }
 
+void cpu_jr_nz_n() // 0x20
+{
+	cpu_routine_jr_conditional_n(GET_FLAG_ZERO != 0); // Jump relative if NZ flag is set
+}
+
 void cpu_ld_hl_nn() // 0x21
 {
 	cpu_routine_ld_16(cpu_registers.h, cpu_registers.l); // Load 16-bit immediate value into HL register pair
@@ -193,6 +198,11 @@ void cpu_ld_h_n() // 0x26
 	cpu_routine_ld_8(cpu_registers.h); // Load 8-bit immediate value into H register
 }
 
+void cpu_jr_z_n() // 0x28
+{
+	cpu_routine_jr_conditional_n(GET_FLAG_ZERO == 0); // Jump relative if Z flag is set
+}
+
 void cpu_dec_hl() // 0x2B
 {
 	cpu_routine_dec_16(cpu_registers.hl); // Decrement HL register pair
@@ -213,6 +223,11 @@ void cpu_ld_l_n() // 0x2E
 	cpu_routine_ld_8(cpu_registers.l); // Load 8-bit immediate value into L register
 }
 
+void cpu_jr_nc_n() // 0x30
+{
+	cpu_routine_jr_conditional_n(GET_FLAG_CARRY == 0); // Jump relative if NC flag is set
+}
+
 void cpu_ld_sp_nn() // 0x31
 {
 	cpu_routine_ld_16(cpu_registers.s, cpu_registers.p); // Load 16-bit immediate value into SP register
@@ -229,6 +244,11 @@ void cpu_ldd_hl_a() // 0x32
 void cpu_inc_sp() // 0x33
 {
 	cpu_routine_inc_16(cpu_registers.sp); // Increment SP register
+}
+
+void cpu_jr_c_n() // 0x38
+{
+	cpu_routine_jr_conditional_n(GET_FLAG_CARRY != 0); // Jump relative if C flag is set
 }
 
 void cpu_add_hl_sp() // 0x39
