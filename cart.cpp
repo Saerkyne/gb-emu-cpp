@@ -10,20 +10,16 @@ cart_header_struct* cartridge_header = (cart_header_struct*)(cartridge_data + 0x
 
 
 // Helper function to get path of currently running emulator
-bool get_runtime_path()
-{
-	if (GetCurrentDirectory(MAX_PATH, runtime_path_buffer) == 0)
-	{
+bool get_runtime_path() {
+	if (GetCurrentDirectoryA(MAX_PATH, runtime_path_buffer) == 0) {
 		return false;
 	}
 	return true;
 }
 
 // Opens a default file dialog to select a Game Boy ROM. Not used currently, but could be useful for future GUI implementation.
-bool cart_open_file()
-{
-	if (!get_runtime_path())
-	{
+bool cart_open_file() {
+	if (!get_runtime_path()) {
 		return false;
 	}
 	
@@ -41,16 +37,14 @@ bool cart_open_file()
 	ofn.lpstrTitle = "Select a Game Boy ROM"; // Dialog title
 	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST; // Flags for the dialog
 
-	if (GetOpenFileNameA(&ofn))
-	{
+	if (GetOpenFileNameA(&ofn)) {
 		cart_load(filename);
 		return true;
 	}
 	return false;
 }
 
-void cart_print_info()
-{
+void cart_print_info() {
 	printf("Entry point: %.2X%.2X%.2X%.2X\n", 
 		cartridge_header->entry_point[0], 
 		cartridge_header->entry_point[1], 
@@ -72,12 +66,10 @@ void cart_print_info()
 
 
 // Loads a Game Boy ROM from the specified filename into the cartridge_data buffer. Returns true if successful, false otherwise.
-bool cart_load(const char* filename)
-{
+bool cart_load(const char* filename) {
 	std::streampos size;
 	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
-	if (file.is_open())
-	{
+	if (file.is_open()) {
 		size = file.tellg(); // Get the size of the file
 		file.seekg(0, std::ios::beg); // Move to the beginning of the file
 		file.read((char*)cartridge_data, MAX_CART_SIZE); // Read the file into the cartridge_data buffer

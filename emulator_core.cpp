@@ -7,12 +7,10 @@
 uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
 
-int core_init()
-{
+int core_init() {
 	const char* tetris_path = "C:\\Users\\jthubbard\\OneDrive - Randolph Community College\\Documents\\Coding\\test\\rom\\Tetris.gb";
 
-	if (!cart_load(tetris_path))
-	{
+	if (!cart_load(tetris_path)) {
 		return -1;
 	}
 
@@ -21,26 +19,21 @@ int core_init()
 	return 0;
 }
 
-void core_run()
-{
+void core_run() {
 	cpu_reset();
 
-	while (!core_quit_requested)
-	{
+	while (!core_quit_requested) {
 		cpu_fetch();
-		if (!cpu_execute())
-		{
+		if (!cpu_execute()) {
 			core_quit_requested = true;
 		}
 	}
 }
 
-void core_shutdown()
-{
+void core_shutdown() {
 	
 }
 
-void core_advance_cpu_clocks(uint8_t clocks)
-{
+void core_advance_cpu_clocks(uint8_t clocks) {
 	core_clock_counter += clocks;
 }
