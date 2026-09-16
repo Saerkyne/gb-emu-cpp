@@ -401,6 +401,36 @@ void cpu_adc_a_l() // 0x8D
 	cpu_routine_adc_a_8(cpu_registers.l); // Add L register and carry flag to A register
 }
 
+void cpu_sub_b() // 0x90
+{
+	cpu_routine_sub_a_8(cpu_registers.b); // Subtract B register from A register
+}
+
+void cpu_sub_c() // 0x91
+{
+	cpu_routine_sub_a_8(cpu_registers.c); // Subtract C register from A register
+}
+
+void cpu_sub_d() // 0x92
+{
+	cpu_routine_sub_a_8(cpu_registers.d); // Subtract D register from A register
+}
+
+void cpu_sub_e() // 0x93
+{
+	cpu_routine_sub_a_8(cpu_registers.e); // Subtract E register from A register
+}
+
+void cpu_sub_h() // 0x94
+{
+	cpu_routine_sub_a_8(cpu_registers.h); // Subtract H register from A register
+}
+
+void cpu_sub_l() // 0x95
+{
+	cpu_routine_sub_a_8(cpu_registers.l); // Subtract L register from A register
+}
+
 void cpu_xor_a() // 0xAF
 {
 	cpu_registers.a = 0; // XOR A with itself results in 0

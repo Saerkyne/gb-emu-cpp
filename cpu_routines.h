@@ -100,3 +100,13 @@
 	SET_FLAG_ZERO(temp == 0);												\
 	core_advance_cpu_clocks(4);												\
 }	
+
+#define cpu_routine_sub_a_8(reg8)											\
+{																			\
+	SET_FLAG_SUBTRACT(1);													\
+	SET_FLAG_HALF_CARRY((cpu_registers.a & 0xF) < (reg8 & 0xF));			\
+	SET_FLAG_CARRY((uint32_t)cpu_registers.a < (uint32_t)reg8);				\
+	cpu_registers.a -= reg8;												\
+	SET_FLAG_ZERO(cpu_registers.a == 0);									\
+	core_advance_cpu_clocks(4);												\
+}

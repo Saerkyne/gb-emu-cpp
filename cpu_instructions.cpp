@@ -146,12 +146,12 @@ const struct gb_cpu_instruction instructions[256] = {
 	{ "ADC A, L",		0,		cpu_adc_a_l		},	// 0x8D
 	{ "ADC A, (HL)",	0,		nullptr			},	// 0x8E
 	{ "ADC A, A",		0,		nullptr			},	// 0x8F
-	{ "SUB B",			0,		nullptr			},	// 0x90
-	{ "SUB C",			0,		nullptr			},	// 0x91
-	{ "SUB D",			0,		nullptr			},	// 0x92
-	{ "SUB E",			0,		nullptr			},	// 0x93
-	{ "SUB H",			0,		nullptr			},	// 0x94
-	{ "SUB L",			0,		nullptr			},	// 0x95
+	{ "SUB B",			0,		cpu_sub_a_b		},	// 0x90
+	{ "SUB C",			0,		cpu_sub_a_c		},	// 0x91
+	{ "SUB D",			0,		cpu_sub_a_d		},	// 0x92
+	{ "SUB E",			0,		cpu_sub_a_e		},	// 0x93
+	{ "SUB H",			0,		cpu_sub_a_h		},	// 0x94
+	{ "SUB L",			0,		cpu_sub_a_l		},	// 0x95
 	{ "SUB (HL)",		0,		nullptr			},	// 0x96
 	{ "SUB A",			0,		nullptr			},	// 0x97
 	{ "SBC A, B",		0,		nullptr			},	// 0x98
