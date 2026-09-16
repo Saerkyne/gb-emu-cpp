@@ -54,6 +54,11 @@ void cpu_ld_bc_nn() // 0x01
 	cpu_routine_ld_16(cpu_registers.b, cpu_registers.c); // Load 16-bit immediate value into BC register pair
 }
 
+void cpu_ld_bc_a() // 0x02
+{
+	cpu_routine_ld_ptr8(cpu_registers.bc, cpu_registers.a); // Load 8-bit value from 16-bit memory addres
+}
+
 void cpu_dec_b() // 0x05
 {
 	cpu_routine_dec_8(cpu_registers.b); // Decrement B register
@@ -69,14 +74,34 @@ void cpu_ld_c_n() // 0x0E
 	cpu_routine_ld_8(cpu_registers.c); // Load 8-bit immediate value into C register
 }
 
+void cpu_dec_c() // 0x0D
+{
+	cpu_routine_dec_8(cpu_registers.c); // Decrement C register
+}
+
 void cpu_ld_de_nn() // 0x11
 {
 	cpu_routine_ld_16(cpu_registers.d, cpu_registers.e); // Load 16-bit immediate value into DE register pair
 }
 
+void cpu_ld_de_a() // 0x12
+{
+	cpu_routine_ld_ptr8(cpu_registers.de, cpu_registers.a); // Load 8-bit value from 16-bit memory address
+}
+
+void cpu_dec_d() // 0x15
+{
+	cpu_routine_dec_8(cpu_registers.d); // Decrement D register
+}
+
 void cpu_ld_d_n() // 0x16
 {
 	cpu_routine_ld_8(cpu_registers.d); // Load 8-bit immediate value into D register
+}
+
+void cpu_dec_e() // 0x1D
+{
+	cpu_routine_dec_8(cpu_registers.e); // Decrement E register
 }
 
 void cpu_ld_e_n() // 0x1E
@@ -89,9 +114,19 @@ void cpu_ld_hl_nn() // 0x21
 	cpu_routine_ld_16(cpu_registers.h, cpu_registers.l); // Load 16-bit immediate value into HL register pair
 }
 
+void cpu_dec_h() // 0x25
+{
+	cpu_routine_dec_8(cpu_registers.h); // Decrement H register
+}
+
 void cpu_ld_h_n() // 0x26
 {
 	cpu_routine_ld_8(cpu_registers.h); // Load 8-bit immediate value into H register
+}
+
+void cpu_dec_l() // 0x2D
+{
+	cpu_routine_dec_8(cpu_registers.l); // Decrement L register
 }
 
 void cpu_ld_l_n() // 0x2E
@@ -110,6 +145,16 @@ void cpu_ldd_hl_a() // 0x32
 	memory_bus_write(cpu_registers.hl, cpu_registers.a); // Write A to memory at HL
 	cpu_registers.hl = (cpu_registers.hl - 1) & 0xFFFF; // Decrement HL, ensure it's 16 bits
 	core_advance_cpu_clocks(4);
+}
+
+void cpu_dec_a() // 0x3D
+{
+	cpu_routine_dec_8(cpu_registers.a); // Decrement A register
+}
+
+void cpu_ld_a_n() // 0x3E
+{
+	cpu_routine_ld_8(cpu_registers.a); // Load 8-bit immediate value into A register
 }
 
 void cpu_jp_nn() // 0xC3
