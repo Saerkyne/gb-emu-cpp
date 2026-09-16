@@ -170,12 +170,12 @@ const struct gb_cpu_instruction instructions[256] = {
 	{ "AND L",			0,		cpu_and_a_l		},	// 0xA5
 	{ "AND (HL)",		0,		nullptr			},	// 0xA6
 	{ "AND A",			0,		nullptr			},	// 0xA7
-	{ "XOR B",			0,		nullptr			},	// 0xA8
-	{ "XOR C",			0,		nullptr			},	// 0xA9
-	{ "XOR D",			0,		nullptr			},	// 0xAA
-	{ "XOR E",			0,		nullptr			},	// 0xAB
-	{ "XOR H",			0,		nullptr			},	// 0xAC
-	{ "XOR L",			0,		nullptr			},	// 0xAD
+	{ "XOR B",			0,		cpu_xor_a_b		},	// 0xA8
+	{ "XOR C",			0,		cpu_xor_a_c		},	// 0xA9
+	{ "XOR D",			0,		cpu_xor_a_d		},	// 0xAA
+	{ "XOR E",			0,		cpu_xor_a_e		},	// 0xAB
+	{ "XOR H",			0,		cpu_xor_a_h		},	// 0xAC
+	{ "XOR L",			0,		cpu_xor_a_l		},	// 0xAD
 	{ "XOR (HL)",		0,		nullptr			},	// 0xAE
 	{ "XOR A",			0,		cpu_xor_a		},	// 0xAF
 	{ "OR B",			0,		nullptr			},	// 0xB0

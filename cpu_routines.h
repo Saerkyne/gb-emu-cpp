@@ -131,3 +131,13 @@
 	SET_FLAG_ZERO(cpu_registers.a == 0);									\
 	core_advance_cpu_clocks(4);												\
 }
+
+#define cpu_routine_xor_a_8(reg8)											\
+{																			\
+	SET_FLAG_HALF_CARRY(0);													\
+	SET_FLAG_SUBTRACT(0);													\
+	SET_FLAG_CARRY(0);														\
+	cpu_registers.a ^= reg8;												\
+	SET_FLAG_ZERO(cpu_registers.a == 0);									\
+	core_advance_cpu_clocks(4);												\
+}

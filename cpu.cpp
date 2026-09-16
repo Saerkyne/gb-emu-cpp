@@ -476,6 +476,36 @@ void cpu_and_a_l() // 0xA5
 	cpu_routine_and_a_8(cpu_registers.l); // AND L register with A register
 }
 
+void cpu_xor_a_b() // 0xA8
+{
+	cpu_routine_xor_a_8(cpu_registers.b); // XOR B register with A register
+}
+
+void cpu_xor_a_c() // 0xA9
+{
+	cpu_routine_xor_a_8(cpu_registers.c); // XOR C register with A register
+}
+
+void cpu_xor_a_d() // 0xAA
+{
+	cpu_routine_xor_a_8(cpu_registers.d); // XOR D register with A register
+}
+
+void cpu_xor_a_e() // 0xAB
+{
+	cpu_routine_xor_a_8(cpu_registers.e); // XOR E register with A register
+}
+
+void cpu_xor_a_h() // 0xAC
+{
+	cpu_routine_xor_a_8(cpu_registers.h); // XOR H register with A register
+}
+
+void cpu_xor_a_l() // 0xAD
+{
+	cpu_routine_xor_a_8(cpu_registers.l); // XOR L register with A register
+}
+
 void cpu_xor_a() // 0xAF
 {
 	cpu_registers.a = 0; // XOR A with itself results in 0
