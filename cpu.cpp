@@ -67,6 +67,27 @@ void cpu_ld_b_n() { // 0x06
 	cpu_routine_ld_8(cpu_registers.b); // Load 8-bit immediate value into B register
 }
 
+void cpu_rlca() {
+	core_advance_cpu_clocks(4); // RLC A takes 4 clock cycles
+	SET_FLAG_ZERO(0);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	SET_FLAG_CARRY((cpu_registers.a & 0x80) != 0); 
+	cpu_registers.a = (cpu_registers.a << 1) | GET_FLAG_CARRY;
+}
+
+void cpu_ld_nn_sp() { // 0x08
+	core_advance_cpu_clocks(4);
+	uint16_t temp = memory_bus_read(cpu_registers.pc++);
+	core_advance_cpu_clocks(4);
+	temp |= ((uint16_t)memory_bus_read(cpu_registers.pc++)) << 8;
+	core_advance_cpu_clocks(4);
+	memory_bus_write(temp++, (cpu_registers.sp & 0xFF));
+	core_advance_cpu_clocks(4);
+	memory_bus_write(temp++, (cpu_registers.sp & 0xFF00) >> 8);
+	core_advance_cpu_clocks(4);
+}
+
 void cpu_add_hl_bc() { // 0x09
 	cpu_routine_add_hl_16(cpu_registers.bc); // Add BC register pair to HL register pair
 }
@@ -89,6 +110,15 @@ void cpu_dec_c() { // 0x0D
 
 void cpu_ld_c_n() { // 0x0E
 	cpu_routine_ld_8(cpu_registers.c); // Load 8-bit immediate value into C register
+}
+
+void cpu_rrca() { // 0x0F
+	core_advance_cpu_clocks(4); // RRC A takes 4 clock cycles
+	SET_FLAG_ZERO(0);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	SET_FLAG_CARRY((cpu_registers.a & 0x01) != 0); 
+	cpu_registers.a = (cpu_registers.a >> 1) | (GET_FLAG_CARRY << 7);
 }
 
 void cpu_ld_de_nn() { // 0x11

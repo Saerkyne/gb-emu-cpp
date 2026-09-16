@@ -84,12 +84,15 @@ void cpu_inc_bc();		// 0x03
 void cpu_inc_b();		// 0x04
 void cpu_dec_b();		// 0x05
 void cpu_ld_b_n();		// 0x06
+void cpu_rlca();		// 0x07
+void cpu_ld_nn_sp();	// 0x08
 void cpu_add_hl_bc();	// 0x09
 void cpu_ld_a_bc();		// 0x0A
 void cpu_dec_bc();		// 0x0B
 void cpu_inc_c();		// 0x0C
 void cpu_dec_c();		// 0x0D
 void cpu_ld_c_n();		// 0x0E
+void cpu_rrca();		// 0x0F
 void cpu_ld_de_nn();	// 0x11
 void cpu_ld_de_a();		// 0x12
 void cpu_inc_de();		// 0x13
