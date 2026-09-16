@@ -99,6 +99,13 @@ void cpu_ld_sp_nn();	// 0x31
 void cpu_ldd_hl_a();	// 0x32
 void cpu_dec_a();		// 0x3D
 void cpu_ld_a_n();		// 0x3E
+void cpu_ld_hl_b();		// 0x70
+void cpu_ld_hl_c();		// 0x71
+void cpu_ld_hl_d();		// 0x72
+void cpu_ld_hl_e();		// 0x73
+void cpu_ld_hl_h();		// 0x74
+void cpu_ld_hl_l();		// 0x75
+void cpu_ld_hl_a();		// 0x77
 void cpu_jp_nn();		// 0xC3
 void cpu_xor_a();		// 0xAF
 

@@ -56,7 +56,7 @@ void cpu_ld_bc_nn() // 0x01
 
 void cpu_ld_bc_a() // 0x02
 {
-	cpu_routine_ld_ptr8(cpu_registers.bc, cpu_registers.a); // Load 8-bit value from 16-bit memory addres
+	cpu_routine_ld_ptr8(cpu_registers.bc, cpu_registers.a); // Load 8-bit value into a from 16-bit memory address in BC
 }
 
 void cpu_dec_b() // 0x05
@@ -86,7 +86,7 @@ void cpu_ld_de_nn() // 0x11
 
 void cpu_ld_de_a() // 0x12
 {
-	cpu_routine_ld_ptr8(cpu_registers.de, cpu_registers.a); // Load 8-bit value from 16-bit memory address
+	cpu_routine_ld_ptr8(cpu_registers.de, cpu_registers.a); // Load 8-bit value into register a from 16-bit memory address in DE
 }
 
 void cpu_dec_d() // 0x15
@@ -171,6 +171,17 @@ void cpu_jp_nn() // 0xC3
 	cpu_registers.pc = temp; // Jump to the address
 	core_advance_cpu_clocks(4);
 }
+
+void cpu_ld_hl_b() // 0x70
+{
+	cpu_routine_ld_ptr8(cpu_registers.hl, cpu_registers.b); // Load 8-bit value into register B from 16-bit memory address in HL
+}
+
+void cpu_ld_hl_c() // 0x71
+{
+	cpu_routine_ld_ptr8(cpu_registers.hl, cpu_registers.c); // Load 8-bit value into register C from 16-bit memory address in HL
+}
+
 
 void cpu_xor_a() // 0xAF
 {
