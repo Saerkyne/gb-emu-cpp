@@ -586,6 +586,11 @@ void cpu_pop_bc() // 0xC1
 	cpu_routine_pop_16(cpu_registers.b, cpu_registers.c); // Pop value from stack into BC register pair
 }
 
+void cpu_jp_nz_nn() // 0xC2
+{
+	cpu_routine_jp_conditional_nnnn(GET_FLAG_ZERO == 0); // Jump to address nn if zero flag not set
+}
+
 void cpu_jp_nn() // 0xC3
 {
 	core_advance_cpu_clocks(4); // JP nn takes 16 clock cycles, but we jump 4 per action instead of all at once
@@ -621,6 +626,11 @@ void cpu_ret_z() // 0xC8
 	cpu_routine_ret_conditional(GET_FLAG_ZERO != 0); // Return from subroutine if zero flag is set
 }
 
+void cpu_jp_z_nn() // 0xCA
+{
+	cpu_routine_jp_conditional_nnnn(GET_FLAG_ZERO != 0); // Jump to address nn if zero flag is set
+}
+
 void cpu_call_z_nn() // 0xCC
 {
 	cpu_routine_call_conditional_nnnn(GET_FLAG_ZERO != 0); // Call subroutine at address nn if zero flag is set
@@ -641,6 +651,11 @@ void cpu_pop_de() // 0xD1
 	cpu_routine_pop_16(cpu_registers.d, cpu_registers.e); // Pop value from stack into DE register pair
 }
 
+void cpu_jp_nc_nn() // 0xD2
+{
+	cpu_routine_jp_conditional_nnnn(GET_FLAG_CARRY == 0); // Jump to address nn if carry flag not set
+}
+
 void cpu_call_nc_nn() // 0xD4
 {
 	cpu_routine_call_conditional_nnnn(GET_FLAG_CARRY == 0); // Call subroutine at address nn if carry flag not set
@@ -659,6 +674,11 @@ void cpu_rst_10() // 0xD7
 void cpu_ret_c() // 0xD8
 {
 	cpu_routine_ret_conditional(GET_FLAG_CARRY != 0); // Return from subroutine if carry flag is set
+}
+
+void cpu_jp_c_nn() // 0xDA
+{
+	cpu_routine_jp_conditional_nnnn(GET_FLAG_CARRY != 0); // Jump to address nn if carry flag is set
 }
 
 void cpu_call_c_nn() // 0xDC
