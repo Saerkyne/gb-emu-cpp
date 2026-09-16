@@ -596,6 +596,11 @@ void cpu_jp_nn() // 0xC3
 	core_advance_cpu_clocks(4);
 }
 
+void cpu_call_nz_nn() // 0xC4
+{
+	cpu_routine_call_conditional_nnnn(GET_FLAG_ZERO == 0); // Call subroutine at address nn if zero flag not set
+}
+
 void cpu_push_bc() // 0xC5
 {
 	cpu_routine_push_16(cpu_registers.bc); // Push BC register pair onto the stack
@@ -604,6 +609,11 @@ void cpu_push_bc() // 0xC5
 void cpu_rst_00() // 0xC7
 {
 	cpu_routine_rst_nnnn(0x0000); // Call subroutine at address 0x0000
+}
+
+void cpu_call_z_nn() // 0xCC
+{
+	cpu_routine_call_conditional_nnnn(GET_FLAG_ZERO != 0); // Call subroutine at address nn if zero flag is set
 }
 
 void cpu_rst_08() // 0xCF
@@ -616,6 +626,11 @@ void cpu_pop_de() // 0xD1
 	cpu_routine_pop_16(cpu_registers.d, cpu_registers.e); // Pop value from stack into DE register pair
 }
 
+void cpu_call_nc_nn() // 0xD4
+{
+	cpu_routine_call_conditional_nnnn(GET_FLAG_CARRY == 0); // Call subroutine at address nn if carry flag not set
+}
+
 void cpu_push_de() // 0xD5
 {
 	cpu_routine_push_16(cpu_registers.de); // Push DE register pair onto the stack
@@ -624,6 +639,11 @@ void cpu_push_de() // 0xD5
 void cpu_rst_10() // 0xD7
 {
 	cpu_routine_rst_nnnn(0x0010); // Call subroutine at address 0x0010
+}
+
+void cpu_call_c_nn() // 0xDC
+{
+	cpu_routine_call_conditional_nnnn(GET_FLAG_CARRY != 0); // Call subroutine at address nn if carry flag is set
 }
 
 void cpu_rst_18() // 0xDF
