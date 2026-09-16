@@ -590,3 +590,43 @@ void cpu_jp_nn() // 0xC3
 	cpu_registers.pc = temp; // Jump to the address
 	core_advance_cpu_clocks(4);
 }
+
+void cpu_rst_00() // 0xC7
+{
+	cpu_routine_rst_nnnn(0x0000); // Call subroutine at address 0x0000
+}
+
+void cpu_rst_08() // 0xCF
+{
+	cpu_routine_rst_nnnn(0x0008); // Call subroutine at address 0x0008
+}
+
+void cpu_rst_10() // 0xD7
+{
+	cpu_routine_rst_nnnn(0x0010); // Call subroutine at address 0x0010
+}
+
+void cpu_rst_18() // 0xDF
+{
+	cpu_routine_rst_nnnn(0x0018); // Call subroutine at address 0x0018
+}
+
+void cpu_rst_20() // 0xE7
+{
+	cpu_routine_rst_nnnn(0x0020); // Call subroutine at address 0x0020
+}
+
+void cpu_rst_28() // 0xEF
+{
+	cpu_routine_rst_nnnn(0x0028); // Call subroutine at address 0x0028
+}
+
+void cpu_rst_30() // 0xF7
+{
+	cpu_routine_rst_nnnn(0x0030); // Call subroutine at address 0x0030
+}
+
+void cpu_rst_38() // 0xFF
+{
+	cpu_routine_rst_nnnn(0x0038); // Call subroutine at address 0x0038
+}

@@ -160,3 +160,20 @@
 	SET_FLAG_ZERO(cpu_registers.a == reg8);									\
 	core_advance_cpu_clocks(4);												\
 }
+
+#define cpu_routine_rst_nnnn(addr)											\
+{																			\
+	core_advance_cpu_clocks(4);												\
+	cpu_registers.sp--;														\
+	cpu_registers.sp &= 0xFFFF;												\
+	const uint8_t pc_high = (cpu_registers.pc & 0xFF00) >> 8;				\
+	core_advance_cpu_clocks(4);												\
+	memory_bus_write(cpu_registers.sp, pc_high);							\
+	core_advance_cpu_clocks(4);												\
+	cpu_registers.sp--;														\
+	cpu_registers.sp &= 0xFFFF;												\
+	const uint8_t pc_low = (cpu_registers.pc & 0xFF);						\
+	memory_bus_write(cpu_registers.sp, pc_low);								\
+	cpu_registers.pc = addr;												\
+	core_advance_cpu_clocks(4);												\
+}
