@@ -2,6 +2,7 @@
 
 #include "cart.h"
 #include "cpu.h"
+#include "timer.h"
 
 
 uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
@@ -35,5 +36,7 @@ void core_shutdown() {
 }
 
 void core_advance_cpu_clocks(uint8_t clocks) {
+	timer_advance_clocks(clocks);
+	
 	core_clock_counter += clocks;
 }

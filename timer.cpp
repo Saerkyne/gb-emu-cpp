@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "memory_bus.h"
 
+extern const uint8_t cpu_halt_count;
 const uint16_t timer_tac_edge_bits[4] = { 9, 3, 5, 7 };
 
 gb_timer_registers* timer_registers = (gb_timer_registers*)(memory + 0xFF04); // Timer registers start at 0xFF04
@@ -62,6 +63,11 @@ void timer_advance_clocks(const uint8_t cycles) {
                 break;
             }
         }
+    }
+
+    if (cpu_halt_count == 2) {
+        // CPU is in STOP state, do not increase DIV
+        return;
     }
     timer_increase_div(cycles);
 }

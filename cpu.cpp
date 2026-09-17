@@ -3,12 +3,14 @@
 #include "cpu_routines.h"
 #include "memory_bus.h"
 #include "emulator_core.h"
+#include "timer.h"
 #include <stdio.h>
 
 gb_cpu_registers cpu_registers; // Global instance of CPU registers
 uint8_t cpu_current_op_code = 0; // Current operation code being executed
 uint32_t cpu_instruction_counter = 0; // Counter for the number of instructions executed
 void* cpu_current_instruction_execute = nullptr; // Pointer to the current instruction's execute function
+uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop instruction
 
 void cpu_reset() {
 	// AFter executing boot rom, registers should be set to the following values:
@@ -121,6 +123,15 @@ void cpu_rrca() { // 0x0F
 	cpu_registers.a = (cpu_registers.a >> 1) | (GET_FLAG_CARRY << 7);
 }
 
+void cpu_stop() { // 0x10
+	core_advance_cpu_clocks(4); 
+	if (memory_bus_read(cpu_registers.pc++) != 0) {
+		printf("CPU - Corrupted STOP at PC: %04X, should have operand 0x00\n",cpu_registers.pc);
+	}
+	core_advance_cpu_clocks(4);
+	timer_on_div_write(0);
+	cpu_halt_count = 2;
+}
 void cpu_ld_de_nn() { // 0x11
 	cpu_routine_ld_16(cpu_registers.d, cpu_registers.e); // Load 16-bit immediate value into DE register pair
 }
@@ -143,6 +154,24 @@ void cpu_dec_d() { // 0x15
 
 void cpu_ld_d_n() { // 0x16
 	cpu_routine_ld_8(cpu_registers.d); // Load 8-bit immediate value into D register
+}
+
+void cpu_rla() { // 0x17
+	core_advance_cpu_clocks(4); // RLA takes 4 clock cycles
+	SET_FLAG_ZERO(0);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	uint8_t temp = GET_FLAG_CARRY;
+	SET_FLAG_CARRY((cpu_registers.a & 0x80) != 0);
+	cpu_registers.a = (cpu_registers.a << 1) | temp;
+}
+
+void cpu_jr_n() { // 0x18
+	core_advance_cpu_clocks(4);
+	uint8_t temp = memory_bus_read(cpu_registers.pc++);
+	core_advance_cpu_clocks(4);
+	cpu_registers.pc = (cpu_registers.pc + (int8_t)temp) & 0xFFFF;
+	core_advance_cpu_clocks(4);
 }
 
 void cpu_add_hl_de() { // 0x19
@@ -169,12 +198,29 @@ void cpu_ld_e_n() { // 0x1E
 	cpu_routine_ld_8(cpu_registers.e); // Load 8-bit immediate value into E register
 }
 
+void cpu_rra() { // 0x1F
+	core_advance_cpu_clocks(4); // RRA takes 4 clock cycles
+	SET_FLAG_ZERO(0);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	uint8_t temp = GET_FLAG_CARRY;
+	SET_FLAG_CARRY((cpu_registers.a & 0x01));
+	cpu_registers.a = (cpu_registers.a >> 1) | (temp << 7);
+}
+
 void cpu_jr_nz_n() { // 0x20
 	cpu_routine_jr_conditional_n(GET_FLAG_ZERO != 0); // Jump relative if NZ flag is set
 }
 
 void cpu_ld_hl_nn() { // 0x21
 	cpu_routine_ld_16(cpu_registers.h, cpu_registers.l); // Load 16-bit immediate value into HL register pair
+}
+
+void cpu_ldi_hl_a() { // 0x22
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, cpu_registers.a);
+	core_advance_cpu_clocks(4);
+	cpu_registers.hl = (cpu_registers.hl + 1) & 0xFFFF; // Increment HL, ensure it's 16 bits
 }
 
 void cpu_inc_hl() { // 0x23
@@ -193,8 +239,49 @@ void cpu_ld_h_n() { // 0x26
 	cpu_routine_ld_8(cpu_registers.h); // Load 8-bit immediate value into H register
 }
 
+void cpu_daa() { // 0x27
+	core_advance_cpu_clocks(4);
+	if (!GET_FLAG_SUBTRACT) {
+		// after an addition, adjust if (half-)carry occured or if result is out of bounds
+		if (GET_FLAG_CARRY || cpu_registers.a > 0x99) {
+			cpu_registers.a += 0x60;
+			SET_FLAG_CARRY(1);
+		}
+		if (GET_FLAG_HALF_CARRY || (cpu_registers.a & 0x0F) > 0x09) {
+			cpu_registers.a += 0x6;
+		}
+	} else {
+		// after a subtraction, adjust if (half-)carry occured
+		if (GET_FLAG_CARRY) {
+			cpu_registers.a -= 0x60;
+		}
+		if (GET_FLAG_HALF_CARRY) {
+			cpu_registers.a -= 0x6;
+		}
+	}
+	SET_FLAG_ZERO(cpu_registers.a == 0);
+	SET_FLAG_HALF_CARRY(0);
+}
+
 void cpu_jr_z_n() { // 0x28
+	// Might be bugged, leaving it as a learning experience if it is
 	cpu_routine_jr_conditional_n(GET_FLAG_ZERO == 0); // Jump relative if Z flag is set
+}
+
+void cpu_add_hl_hl() { // 0x29
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_CARRY((cpu_registers.hl & 0x8000) != 0); // Set carry flag if the addition results in a carry from bit 15
+	SET_FLAG_HALF_CARRY((cpu_registers.hl & 0x0800) != 0); // Set half-carry flag if the addition results in a carry from bit 11
+	core_advance_cpu_clocks(4);
+	cpu_registers.hl = (cpu_registers.hl << 1) & 0xFFFF; // Perform the addition (HL + HL) and ensure it's 16 bits
+}
+
+void cpu_ldi_a_hl() { // 0x2A
+	core_advance_cpu_clocks(4);
+	cpu_registers.a = memory_bus_read(cpu_registers.hl); // Load value from memory at HL into A register
+	core_advance_cpu_clocks(4);
+	cpu_registers.hl = (cpu_registers.hl + 1) & 0xFFFF; // Increment HL, ensure it's 16 bits
 }
 
 void cpu_dec_hl() { // 0x2B
@@ -211,6 +298,13 @@ void cpu_dec_l() { // 0x2D
 
 void cpu_ld_l_n() { // 0x2E
 	cpu_routine_ld_8(cpu_registers.l); // Load 8-bit immediate value into L register
+}
+
+void cpu_cpl() { // 0x2F
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(1);
+	SET_FLAG_HALF_CARRY(1);
+	cpu_registers.a = ~cpu_registers.a; // Complement the A register (bitwise NOT)
 }
 
 void cpu_jr_nc_n() { // 0x30
@@ -232,12 +326,59 @@ void cpu_inc_sp() { // 0x33
 	cpu_routine_inc_16(cpu_registers.sp); // Increment SP register
 }
 
+void cpu_inc__hl() { // 0x34
+	core_advance_cpu_clocks(4);
+	uint32_t temp = memory_bus_read(cpu_registers.hl); // Read the value from memory at HL into a temporary variable
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY((temp & 0xF) == 0);
+	temp = (temp + 1) & 0xFF;
+	SET_FLAG_ZERO(temp == 0);
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp); // Write the incremented value back to memory at HL
+}
+
+void cpu_dec__hl() { // 0x35
+	core_advance_cpu_clocks(4);
+	uint32_t temp = memory_bus_read(cpu_registers.hl); // Read the value from memory at HL into a temporary variable
+	core_advance_cpu_clocks(4);
+	// Might be a bug, leaving for educational reasons
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY((temp & 0xF) == 0);
+	temp = (temp - 1) & 0xFF;
+	SET_FLAG_ZERO(temp == 0);
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp); // Write the incremented value back to memory at HL
+}
+
+void cpu_ld_hl_n() { // 0x36
+	core_advance_cpu_clocks(4);
+	uint8_t temp = memory_bus_read(cpu_registers.pc++);
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp);
+	core_advance_cpu_clocks(4);
+}
+
+void cpu_scf() { // 0x37
+	SET_FLAG_CARRY(1);
+	SET_FLAG_HALF_CARRY(0);
+	SET_FLAG_SUBTRACT(0);
+	core_advance_cpu_clocks(4);
+}
+
 void cpu_jr_c_n() { // 0x38
 	cpu_routine_jr_conditional_n(GET_FLAG_CARRY != 0); // Jump relative if C flag is set
 }
 
 void cpu_add_hl_sp() { // 0x39
 	cpu_routine_add_hl_16(cpu_registers.sp); // Add SP register to HL register pair
+}
+
+void cpu_ldd_a_hl() { // 0x3A
+	core_advance_cpu_clocks(4);
+	cpu_registers.a = memory_bus_read(cpu_registers.hl);
+	core_advance_cpu_clocks(4);
+	cpu_registers.hl = (cpu_registers.hl - 1) & 0xFFFF; // Decrement HL, ensure it's 16 bits
 }
 
 void cpu_dec_sp() { // 0x3B
@@ -254,6 +395,13 @@ void cpu_dec_a() { // 0x3D
 
 void cpu_ld_a_n() { // 0x3E
 	cpu_routine_ld_8(cpu_registers.a); // Load 8-bit immediate value into A register
+}
+
+void cpu_ccf() { // 0x3F
+	core_advance_cpu_clocks(4);
+	SET_FLAG_CARRY(!GET_FLAG_CARRY);
+	SET_FLAG_HALF_CARRY(0);
+	SET_FLAG_SUBTRACT(0);
 }
 
 void cpu_ld_b_b() { // 0x40
