@@ -163,6 +163,7 @@
     <ClInclude Include="cpu_instructions.h" />
     <ClInclude Include="cpu_routines.h" />
     <ClInclude Include="emulator_core.h" />
+    <ClInclude Include="interrupts.h" />
     <ClInclude Include="memory_bus.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="timer.h" />

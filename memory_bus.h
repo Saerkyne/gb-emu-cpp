@@ -4,6 +4,9 @@
 
 #define CHECK_BIT(number, bit)        ((number >> bit) & 1U)
 
+const uint16_t ADDR_IO_IF = 0xFF0F; // Interrupt Flag
+const uint16_t ADDR_IO_IE = 0xFFFF; // Interrupt Enable
+
 constexpr uint32_t MEMORY_SIZE = 64 * 1024; // 64 KB of memory
 
 extern uint8_t memory[MEMORY_SIZE];
