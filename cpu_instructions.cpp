@@ -120,7 +120,7 @@ const struct gb_cpu_instruction instructions[256] = {
 	{ "LD (HL), E",		0,		cpu_ld_hl_e		},	// 0x73
 	{ "LD (HL), H",		0,		cpu_ld_hl_h		},	// 0x74
 	{ "LD (HL), L",		0,		cpu_ld_hl_l		},	// 0x75
-	{ "HALT",			0,		nullptr			},	// 0x76
+	{ "HALT",			0,		cpu_halt		},	// 0x76
 	{ "LD (HL), A",		0,		cpu_ld_hl_a		},	// 0x77
 	{ "LD A, B",		0,		cpu_ld_a_b		},	// 0x78
 	{ "LD A, C",		0,		cpu_ld_a_c		},	// 0x79

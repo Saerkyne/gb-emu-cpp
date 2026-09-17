@@ -12,6 +12,7 @@ uint8_t cpu_current_op_code = 0; // Current operation code being executed
 uint32_t cpu_instruction_counter = 0; // Counter for the number of instructions executed
 void* cpu_current_instruction_execute = nullptr; // Pointer to the current instruction's execute function
 uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop instruction
+bool cpu_halt_bug = false;
 
 void cpu_reset() {
 	// AFter executing boot rom, registers should be set to the following values:
@@ -39,6 +40,11 @@ void cpu_fetch() {
 	cpu_current_op_code = memory_bus_read(cpu_registers.pc++);
 	const gb_cpu_instruction& instruction = instructions[cpu_current_op_code];
 	cpu_current_instruction_execute = instruction.execute;
+
+	if (cpu_halt_bug) {
+		cpu_registers.pc--; // Apply the halt bug by decrementing the program counter
+		cpu_halt_bug = false;
+	}
 }
 
 bool cpu_execute() {
@@ -667,6 +673,18 @@ void cpu_ld_hl_h() { // 0x74
 
 void cpu_ld_hl_l() { // 0x75
 	cpu_routine_ld_ptr8(cpu_registers.hl, cpu_registers.l); // Load 8-bit value into register L from 16-bit memory address in HL
+}
+
+void cpu_halt() { // 0x76
+	core_advance_cpu_clocks(4);
+	const uint8_t interrupt_enable = memory_bus_read(ADDR_IO_IE);
+	const uint8_t interrupt_flag = memory_bus_read(ADDR_IO_IF);
+	const bool interrupt_pending = ((interrupt_enable & interrupt_flag) & 0x1F) != 0;
+	if (!interrupt_master_enable && interrupt_pending != 0) {
+		cpu_halt_bug = true; // Set the halt bug flag if CPU is halted with pending interrupts and IME is disabled
+	} else {
+		cpu_halt_count = 1; // Set halt count to indicate CPU is halted
+	}
 }
 
 void cpu_ld_hl_a() { // 0x77

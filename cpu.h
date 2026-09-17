@@ -196,6 +196,7 @@ void cpu_ld_hl_d();		// 0x72
 void cpu_ld_hl_e();		// 0x73
 void cpu_ld_hl_h();		// 0x74
 void cpu_ld_hl_l();		// 0x75
+void cpu_halt();		// 0x76
 void cpu_ld_hl_a();		// 0x77
 void cpu_ld_a_b();		// 0x78
 void cpu_ld_a_c();		// 0x79
