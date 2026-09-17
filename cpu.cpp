@@ -4,6 +4,7 @@
 #include "memory_bus.h"
 #include "emulator_core.h"
 #include "timer.h"
+#include "interrupts.h"
 #include <stdio.h>
 
 gb_cpu_registers cpu_registers; // Global instance of CPU registers
@@ -20,6 +21,18 @@ void cpu_reset() {
 	cpu_registers.hl = 0x014D;
 	cpu_registers.sp = 0xFFFE;
 	cpu_registers.pc = 0x0100; // Start executing at the beginning of the cartridge
+}
+
+void cpu_tick() {
+	if (cpu_halt_count == 0) {
+		cpu_fetch();
+		cpu_execute();
+		cpu_instruction_counter++;
+	} else {
+		core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
+	}
+
+	interrupt_service_routine();
 }
 
 void cpu_fetch() {

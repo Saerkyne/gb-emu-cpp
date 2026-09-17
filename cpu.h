@@ -74,6 +74,7 @@ typedef void(*cpu_execute_op)(); // Function pointer type for CPU instruction ex
 extern gb_cpu_registers cpu_registers; // Global instance of CPU registers
 
 void cpu_reset();
+void cpu_tick();
 void cpu_fetch();
 bool cpu_execute();
 

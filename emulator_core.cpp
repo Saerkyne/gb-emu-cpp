@@ -24,10 +24,7 @@ void core_run() {
 	cpu_reset();
 
 	while (!core_quit_requested) {
-		cpu_fetch();
-		if (!cpu_execute()) {
-			core_quit_requested = true;
-		}
+		cpu_tick();
 	}
 }
 
