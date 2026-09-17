@@ -150,6 +150,7 @@
     <ClCompile Include="emulator_core.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory_bus.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SDL3-3.4.16\VisualC\SDL\SDL.vcxproj">
@@ -164,9 +165,13 @@
     <ClInclude Include="emulator_core.h" />
     <ClInclude Include="memory_bus.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="gb-emu-cpp.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".github\copilot-instructions.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
