@@ -38,12 +38,22 @@ void cpu_tick() {
 
 void cpu_fetch() {
 	cpu_current_op_code = memory_bus_read(cpu_registers.pc++);
-	const gb_cpu_instruction& instruction = instructions[cpu_current_op_code];
-	cpu_current_instruction_execute = instruction.execute;
+
+	const bool is_extended_cb_instruction = cpu_current_op_code == 0xCB;
 
 	if (cpu_halt_bug) {
 		cpu_registers.pc--; // Apply the halt bug by decrementing the program counter
 		cpu_halt_bug = false;
+	}
+	
+	if (is_extended_cb_instruction) {
+		core_advance_cpu_clocks(4);
+		const uint8_t cpu_current_op_code_cb = memory_bus_read(cpu_registers.pc++);
+		const gb_cpu_pre_cb_instruction& cb_instruction = cb_instructions[cpu_current_op_code_cb];
+		cpu_current_instruction_execute = cb_instruction.execute;
+	} else {
+		const gb_cpu_instruction& instruction = instructions[cpu_current_op_code];
+		cpu_current_instruction_execute = instruction.execute;
 	}
 }
 
@@ -1116,7 +1126,7 @@ void cpu_call_nz_nn() { // 0xC4
 }
 
 void cpu_push_bc() { // 0xC5
-	cpu_routine_push_16(cpu_registers.bc); // Push BC register pair onto the stack
+	cpu_routine_push_16(cpu_registers.b, cpu_registers.c); // Push BC register pair onto the stack
 }
 
 void cpu_add_a_n() { // 0xC6
@@ -1207,7 +1217,7 @@ void cpu_call_nc_nn() { // 0xD4
 }
 
 void cpu_push_de() { // 0xD5
-	cpu_routine_push_16(cpu_registers.de); // Push DE register pair onto the stack
+	cpu_routine_push_16(cpu_registers.d, cpu_registers.e); // Push DE register pair onto the stack
 }
 
 void cpu_sub_a_n() { // 0xD6
@@ -1288,7 +1298,7 @@ void cpu_ldh_c_a() { // 0xE2
 }
 
 void cpu_push_hl() { // 0xE5
-	cpu_routine_push_16(cpu_registers.hl); // Push HL register pair onto the stack
+	cpu_routine_push_16(cpu_registers.h, cpu_registers.l); // Push HL register pair onto the stack
 }
 
 void cpu_and_a_n() { // 0xE6
@@ -1375,7 +1385,7 @@ void cpu_di() { // 0xF3
 }
 
 void cpu_push_af() { // 0xF5
-	cpu_routine_push_16(cpu_registers.af); // Push AF register pair onto the stack
+	cpu_routine_push_16(cpu_registers.a, cpu_registers.f); // Push AF register pair onto the stack
 }
 
 void cpu_or_a_n() { // 0xF6
@@ -1442,4 +1452,127 @@ void cpu_cp_a_n() { // 0xFE
 
 void cpu_rst_38() { // 0xFF
 	cpu_routine_rst_nnnn(0x0038); // Call subroutine at address 0x0038
+}
+
+void cpu_cb_rlc_b() { // 0x00
+	cpu_routine_rlc_8(cpu_registers.b); // Rotate B left with carry
+}
+
+void cpu_cb_rlc_c() { // 0x01
+	cpu_routine_rlc_8(cpu_registers.c); // Rotate C left with carry
+}
+
+void cpu_cb_rlc_d() { // 0x02
+	cpu_routine_rlc_8(cpu_registers.d); // Rotate D left with carry
+}
+
+void cpu_cb_rlc_e() { // 0x03
+	cpu_routine_rlc_8(cpu_registers.e); // Rotate E left with carry
+}
+
+void cpu_cb_rlc_h() { // 0x04
+	cpu_routine_rlc_8(cpu_registers.h); // Rotate H left with carry
+}
+
+void cpu_cb_rlc_l() { // 0x05
+	cpu_routine_rlc_8(cpu_registers.l); // Rotate L left with carry
+}
+
+void cpu_cb_rlc_hl() { // 0x06
+	core_advance_cpu_clocks(4);
+	uint32_t temp = memory_bus_read(cpu_registers.hl);
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	SET_FLAG_CARRY((temp & 0x80) != 0);
+	temp = (temp << 1) | (GET_FLAG_CARRY);
+	SET_FLAG_ZERO(temp == 0);
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp);
+}
+
+void cpu_cb_rlc_a() { // 0x07
+	cpu_routine_rlc_8(cpu_registers.a); // Rotate A left with carry
+}
+
+void cpu_cb_rrc_b() { // 0x08
+	cpu_routine_rrc_8(cpu_registers.b); // Rotate B right with carry
+}
+
+void cpu_cb_rrc_c() { // 0x09
+	cpu_routine_rrc_8(cpu_registers.c); // Rotate C right with carry
+}
+
+void cpu_cb_rrc_d() { // 0x0A
+	cpu_routine_rrc_8(cpu_registers.d); // Rotate D right with carry
+}
+
+void cpu_cb_rrc_e() { // 0x0B
+	cpu_routine_rrc_8(cpu_registers.e); // Rotate E right with carry
+}
+
+void cpu_cb_rrc_h() { // 0x0C
+	cpu_routine_rrc_8(cpu_registers.h); // Rotate H right with carry
+}
+
+void cpu_cb_rrc_l() { // 0x0D
+	cpu_routine_rrc_8(cpu_registers.l); // Rotate L right with carry
+}
+
+void cpu_cb_rrc_hl() { // 0x0E
+	core_advance_cpu_clocks(4);
+	uint32_t temp = memory_bus_read(cpu_registers.hl);
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	SET_FLAG_CARRY((temp & 0x01) != 0);
+	temp = (temp >> 1) | (GET_FLAG_CARRY << 7);
+	SET_FLAG_ZERO(temp == 0);
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp);
+}
+
+void cpu_cb_rrc_a() { // 0x0F
+	cpu_routine_rrc_8(cpu_registers.a); // Rotate A right with carry
+}
+
+void cpu_cb_rl_b() { // 0x10
+	cpu_routine_rl_8(cpu_registers.b); // Rotate B left through carry
+}
+
+void cpu_cb_rl_c() { // 0x11
+	cpu_routine_rl_8(cpu_registers.c); // Rotate C left through carry
+}
+
+void cpu_cb_rl_d() { // 0x12
+	cpu_routine_rl_8(cpu_registers.d); // Rotate D left through carry
+}
+
+void cpu_cb_rl_e() { // 0x13
+	cpu_routine_rl_8(cpu_registers.e); // Rotate E left through carry
+}
+
+void cpu_cb_rl_h() { // 0x14
+	cpu_routine_rl_8(cpu_registers.h); // Rotate H left through carry
+}
+
+void cpu_cb_rl_l() { // 0x15
+	cpu_routine_rl_8(cpu_registers.l); // Rotate L left through carry
+}
+
+void cpu_cb_rl_hl() { // 0x16
+	core_advance_cpu_clocks(4);
+	uint32_t temp = memory_bus_read(cpu_registers.hl);
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	uint32_t temp_c = GET_FLAG_CARRY;
+	SET_FLAG_CARRY((temp & 0x80) != 0);
+	temp = ((temp << 1) | temp_c) & 0xFF;
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp);
+}
+
+void cpu_cb_rl_a() { // 0x17
+	cpu_routine_rl_8(cpu_registers.a); // Rotate A left through carry
 }

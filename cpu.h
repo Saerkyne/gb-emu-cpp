@@ -334,3 +334,29 @@ void cpu_ei();			// 0xFB
 						// 0xFD
 void cpu_cp_a_n();		// 0xFE
 void cpu_rst_38();		// 0xFF
+
+// CB Prefixed instructions
+void cpu_cb_rlc_b();	// 0x00
+void cpu_cb_rlc_c();	// 0x01
+void cpu_cb_rlc_d();	// 0x02
+void cpu_cb_rlc_e();	// 0x03
+void cpu_cb_rlc_h();	// 0x04
+void cpu_cb_rlc_l();	// 0x05
+void cpu_cb_rlc_hl();	// 0x06
+void cpu_cb_rlc_a();	// 0x07
+void cpu_cb_rrc_b();	// 0x08
+void cpu_cb_rrc_c();	// 0x09
+void cpu_cb_rrc_d();	// 0x0A
+void cpu_cb_rrc_e();	// 0x0B
+void cpu_cb_rrc_h();	// 0x0C
+void cpu_cb_rrc_l();	// 0x0D
+void cpu_cb_rrc_hl();	// 0x0E
+void cpu_cb_rrc_a();	// 0x0F
+void cpu_cb_rl_b();		// 0x10
+void cpu_cb_rl_c();		// 0x11
+void cpu_cb_rl_d();		// 0x12
+void cpu_cb_rl_e();		// 0x13
+void cpu_cb_rl_h();		// 0x14
+void cpu_cb_rl_l();		// 0x15
+void cpu_cb_rl_hl();	// 0x16
+void cpu_cb_rl_a();		// 0x17
