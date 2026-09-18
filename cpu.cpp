@@ -5,7 +5,7 @@
 #include "emulator_core.h"
 #include "timer.h"
 #include "interrupts.h"
-#include <stdio.h>
+#include "debug_log.h"
 
 gb_cpu_registers cpu_registers; // Global instance of CPU registers
 uint8_t cpu_current_op_code = 0; // Current operation code being executed
@@ -13,6 +13,7 @@ uint32_t cpu_instruction_counter = 0; // Counter for the number of instructions 
 void* cpu_current_instruction_execute = nullptr; // Pointer to the current instruction's execute function
 uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop instruction
 bool cpu_halt_bug = false;
+bool cpu_debug_instructions = true;
 
 void cpu_reset() {
 	// AFter executing boot rom, registers should be set to the following values:
@@ -33,12 +34,21 @@ void cpu_tick() {
 		core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
 	}
 
+	if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
+		cpu_debug_instructions = false;
+		debug_log_close_file();
+	}
+
 	interrupt_service_routine();
 }
 
 void cpu_fetch() {
-	cpu_current_op_code = memory_bus_read(cpu_registers.pc++);
 
+	if (cpu_debug_instructions) {
+		cpu_dump_registers(cpu_registers);
+	}
+
+	cpu_current_op_code = memory_bus_read(cpu_registers.pc++);
 	const bool is_extended_cb_instruction = cpu_current_op_code == 0xCB;
 
 	if (cpu_halt_bug) {
@@ -62,12 +72,37 @@ bool cpu_execute() {
 		const gb_cpu_instruction& instruction = instructions[cpu_current_op_code];
 		const uint8_t pchi = ((cpu_registers.pc - 1) & 0xFF00) >> 8;
 		const uint8_t pclo = ((cpu_registers.pc - 1) & 0xFF);
-		printf("Unknown instruction %.2X at: %.2X%.2X (%s), count %i\n", cpu_current_op_code, pchi, pclo, instruction.dissassembly, cpu_instruction_counter);
+		debug_log("Unknown instruction %.2X at: %.2X%.2X (%s), count %i\n", cpu_current_op_code, pchi, pclo, instruction.dissassembly, cpu_instruction_counter);
 		return false;
 	}
 	// This actually executes the instruction
 	((cpu_execute_op)cpu_current_instruction_execute)();
 	return true;
+}
+
+void cpu_dump_registers(const gb_cpu_registers& registers) {
+	const uint8_t op_code = memory_bus_read(registers.pc);
+	const gb_cpu_instruction& instruction = instructions[op_code];
+	const uint8_t pc_high = (registers.pc & 0xFF00) >> 8;
+	const uint8_t pc_low = (registers.pc & 0xFF);
+	const uint8_t sp_high = (registers.sp & 0xFF00) >> 8;
+	const uint8_t sp_low = (registers.sp & 0xFF);
+
+	if (instruction.operand_length == 0) {
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+	}
+	else if (instruction.operand_length == 1) {
+		const uint8_t operand = memory_bus_read(registers.pc + 1);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+	}
+	else if (instruction.operand_length == 2) {
+		const uint8_t op_low = memory_bus_read(registers.pc + 1);
+		const uint8_t op_high = memory_bus_read(registers.pc + 2);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+	}
 }
 
 void cpu_noop() { // 0x00
@@ -155,7 +190,7 @@ void cpu_rrca() { // 0x0F
 void cpu_stop() { // 0x10
 	core_advance_cpu_clocks(4); 
 	if (memory_bus_read(cpu_registers.pc++) != 0) {
-		printf("CPU - Corrupted STOP at PC: %04X, should have operand 0x00\n",cpu_registers.pc);
+		debug_log("CPU - Corrupted STOP at PC: %04X, should have operand 0x00\n",cpu_registers.pc);
 	}
 	core_advance_cpu_clocks(4);
 	timer_on_div_write(0);
@@ -1162,6 +1197,10 @@ void cpu_jp_z_nn() { // 0xCA
 	cpu_routine_jp_conditional_nnnn(GET_FLAG_ZERO != 0); // Jump to address nn if zero flag is set
 }
 
+void cpu_prefix_cb() { // 0xCB
+	
+}
+
 void cpu_call_z_nn() { // 0xCC
 	cpu_routine_call_conditional_nnnn(GET_FLAG_ZERO != 0); // Call subroutine at address nn if zero flag is set
 }
@@ -1315,7 +1354,7 @@ void cpu_rst_20() { // 0xE7
 	cpu_routine_rst_nnnn(0x0020); // Call subroutine at address 0x0020
 }
 
-void cpu_add_sp_d() { // 0xE8
+void cpu_add_sp_n() { // 0xE8
 	core_advance_cpu_clocks(4);
 	int8_t temp = (int8_t)memory_bus_read(cpu_registers.pc++);
 	core_advance_cpu_clocks(4);

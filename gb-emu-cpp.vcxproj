@@ -147,7 +147,9 @@
     <ClCompile Include="cart.cpp" />
     <ClCompile Include="cpu.cpp" />
     <ClCompile Include="cpu_instructions.cpp" />
+    <ClCompile Include="debug_log.cpp" />
     <ClCompile Include="emulator_core.cpp" />
+    <ClCompile Include="interrupts.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory_bus.cpp" />
     <ClCompile Include="timer.cpp" />
@@ -162,6 +164,7 @@
     <ClInclude Include="cpu.h" />
     <ClInclude Include="cpu_instructions.h" />
     <ClInclude Include="cpu_routines.h" />
+    <ClInclude Include="debug_log.h" />
     <ClInclude Include="emulator_core.h" />
     <ClInclude Include="interrupts.h" />
     <ClInclude Include="memory_bus.h" />

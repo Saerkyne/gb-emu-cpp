@@ -2,7 +2,7 @@
 #include "memory_bus.h"
 #include "interrupts.h"
 
-extern const uint8_t cpu_halt_count;
+extern uint8_t cpu_halt_count;
 const uint16_t timer_tac_edge_bits[4] = { 9, 3, 5, 7 };
 
 gb_timer_registers* timer_registers = (gb_timer_registers*)(memory + 0xFF04); // Timer registers start at 0xFF04
