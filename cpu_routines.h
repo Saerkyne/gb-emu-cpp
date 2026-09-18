@@ -351,3 +351,16 @@
 	core_advance_cpu_clocks(4);												\
 	SET_FLAG_ZERO((memory_bus_read(cpu_registers.hl) & (1 << bitn)) == 0);	\
 }
+
+#define cpu_routine_res_n_8(bitn, reg8) {									\
+	core_advance_cpu_clocks(4);												\
+	reg8 &= ~(1 << bitn);													\
+}
+
+#define cpu_routine_res_n_ptr_hl(bitn) {									\
+	core_advance_cpu_clocks(4);												\
+	uint8_t temp = memory_bus_read(cpu_registers.hl);						\
+	core_advance_cpu_clocks(4);												\
+	memory_bus_write(cpu_registers.hl, temp & (~(1 << bitn)));				\
+	core_advance_cpu_clocks(4);												\
+}

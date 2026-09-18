@@ -2038,3 +2038,259 @@ void cpu_cb_bit_7_hl() { // 0x7E
 void cpu_cb_bit_7_a() { // 0x7F
 	cpu_routine_bit_n_8(7, cpu_registers.a); // Test bit 7 of A
 }
+
+void cpu_cb_res_0_b() { // 0x80
+	cpu_routine_res_n_8(0, cpu_registers.b); // Reset bit 0 of B
+}
+
+void cpu_cb_res_0_c() { // 0x81
+	cpu_routine_res_n_8(0, cpu_registers.c); // Reset bit 0 of C
+}
+
+void cpu_cb_res_0_d() { // 0x82
+	cpu_routine_res_n_8(0, cpu_registers.d); // Reset bit 0 of D
+}
+
+void cpu_cb_res_0_e() { // 0x83
+	cpu_routine_res_n_8(0, cpu_registers.e); // Reset bit 0 of E
+}
+
+void cpu_cb_res_0_h() { // 0x84
+	cpu_routine_res_n_8(0, cpu_registers.h); // Reset bit 0 of H
+}
+
+void cpu_cb_res_0_l() { // 0x85
+	cpu_routine_res_n_8(0, cpu_registers.l); // Reset bit 0 of L
+}
+
+void cpu_cb_res_0_hl() { // 0x86
+	cpu_routine_res_n_ptr_hl(0); // Reset bit 0 of (HL)
+}
+
+void cpu_cb_res_0_a() { // 0x87
+	cpu_routine_res_n_8(0, cpu_registers.a); // Reset bit 0 of A
+}
+
+void cpu_cb_res_1_b() { // 0x88
+	cpu_routine_res_n_8(1, cpu_registers.b); // Reset bit 1 of B
+}
+
+void cpu_cb_res_1_c() { // 0x89
+	cpu_routine_res_n_8(1, cpu_registers.c); // Reset bit 1 of C
+}
+
+void cpu_cb_res_1_d() { // 0x8A
+	cpu_routine_res_n_8(1, cpu_registers.d); // Reset bit 1 of D
+}
+
+void cpu_cb_res_1_e() { // 0x8B
+	cpu_routine_res_n_8(1, cpu_registers.e); // Reset bit 1 of E
+}
+
+void cpu_cb_res_1_h() { // 0x8C
+	cpu_routine_res_n_8(1, cpu_registers.h); // Reset bit 1 of H
+}
+
+void cpu_cb_res_1_l() { // 0x8D
+	cpu_routine_res_n_8(1, cpu_registers.l); // Reset bit 1 of L
+}
+
+void cpu_cb_res_1_hl() { // 0x8E
+	cpu_routine_res_n_ptr_hl(1); // Reset bit 1 of (HL)
+}
+
+void cpu_cb_res_1_a() { // 0x8F
+	cpu_routine_res_n_8(1, cpu_registers.a); // Reset bit 1 of A
+}
+
+void cpu_cb_res_2_b() { // 0x90
+	cpu_routine_res_n_8(2, cpu_registers.b); // Reset bit 2 of B
+}
+
+void cpu_cb_res_2_c() { // 0x91
+	cpu_routine_res_n_8(2, cpu_registers.c); // Reset bit 2 of C
+}
+
+void cpu_cb_res_2_d() { // 0x92
+	cpu_routine_res_n_8(2, cpu_registers.d); // Reset bit 2 of D
+}
+
+void cpu_cb_res_2_e() { // 0x93
+	cpu_routine_res_n_8(2, cpu_registers.e); // Reset bit 2 of E
+}
+
+void cpu_cb_res_2_h() { // 0x94
+	cpu_routine_res_n_8(2, cpu_registers.h); // Reset bit 2 of H
+}
+
+void cpu_cb_res_2_l() { // 0x95
+	cpu_routine_res_n_8(2, cpu_registers.l); // Reset bit 2 of L
+}
+
+void cpu_cb_res_2_hl() { // 0x96
+	cpu_routine_res_n_ptr_hl(2); // Reset bit 2 of (HL)
+}
+
+void cpu_cb_res_2_a() { // 0x97
+	cpu_routine_res_n_8(2, cpu_registers.a); // Reset bit 2 of A
+}
+
+void cpu_cb_res_3_b() { // 0x98
+	cpu_routine_res_n_8(3, cpu_registers.b); // Reset bit 3 of B
+}
+
+void cpu_cb_res_3_c() { // 0x99
+	cpu_routine_res_n_8(3, cpu_registers.c); // Reset bit 3 of C
+}
+
+void cpu_cb_res_3_d() { // 0x9A
+	cpu_routine_res_n_8(3, cpu_registers.d); // Reset bit 3 of D
+}
+
+void cpu_cb_res_3_e() { // 0x9B
+	cpu_routine_res_n_8(3, cpu_registers.e); // Reset bit 3 of E
+}
+
+void cpu_cb_res_3_h() { // 0x9C
+	cpu_routine_res_n_8(3, cpu_registers.h); // Reset bit 3 of H
+}
+
+void cpu_cb_res_3_l() { // 0x9D
+	cpu_routine_res_n_8(3, cpu_registers.l); // Reset bit 3 of L
+}
+
+void cpu_cb_res_3_hl() { // 0x9E
+	cpu_routine_res_n_ptr_hl(3); // Reset bit 3 of (HL)
+}
+
+void cpu_cb_res_3_a() { // 0x9F
+	cpu_routine_res_n_8(3, cpu_registers.a); // Reset bit 3 of A
+}
+
+void cpu_cb_res_4_b() { // 0xA0
+	cpu_routine_res_n_8(4, cpu_registers.b); // Reset bit 4 of B
+}
+
+void cpu_cb_res_4_c() { // 0xA1
+	cpu_routine_res_n_8(4, cpu_registers.c); // Reset bit 4 of C
+}
+
+void cpu_cb_res_4_d() { // 0xA2
+	cpu_routine_res_n_8(4, cpu_registers.d); // Reset bit 4 of D
+}
+
+void cpu_cb_res_4_e() { // 0xA3
+	cpu_routine_res_n_8(4, cpu_registers.e); // Reset bit 4 of E
+}
+
+void cpu_cb_res_4_h() { // 0xA4
+	cpu_routine_res_n_8(4, cpu_registers.h); // Reset bit 4 of H
+}
+
+void cpu_cb_res_4_l() { // 0xA5
+	cpu_routine_res_n_8(4, cpu_registers.l); // Reset bit 4 of L
+}
+
+void cpu_cb_res_4_hl() { // 0xA6
+	cpu_routine_res_n_ptr_hl(4); // Reset bit 4 of (HL)
+}
+
+void cpu_cb_res_4_a() { // 0xA7
+	cpu_routine_res_n_8(4, cpu_registers.a); // Reset bit 4 of A
+}
+
+void cpu_cb_res_5_b() { // 0xA8
+	cpu_routine_res_n_8(5, cpu_registers.b); // Reset bit 5 of B
+}
+
+void cpu_cb_res_5_c() { // 0xA9
+	cpu_routine_res_n_8(5, cpu_registers.c); // Reset bit 5 of C
+}
+
+void cpu_cb_res_5_d() { // 0xAA
+	cpu_routine_res_n_8(5, cpu_registers.d); // Reset bit 5 of D
+}
+
+void cpu_cb_res_5_e() { // 0xAB
+	cpu_routine_res_n_8(5, cpu_registers.e); // Reset bit 5 of E
+}
+
+void cpu_cb_res_5_h() { // 0xAC
+	cpu_routine_res_n_8(5, cpu_registers.h); // Reset bit 5 of H
+}
+
+void cpu_cb_res_5_l() { // 0xAD
+	cpu_routine_res_n_8(5, cpu_registers.l); // Reset bit 5 of L
+}
+
+void cpu_cb_res_5_hl() { // 0xAE
+	cpu_routine_res_n_ptr_hl(5); // Reset bit 5 of (HL)
+}
+
+void cpu_cb_res_5_a() { // 0xAF
+	cpu_routine_res_n_8(5, cpu_registers.a); // Reset bit 5 of A
+}
+
+void cpu_cb_res_6_b() { // 0xB0
+	cpu_routine_res_n_8(6, cpu_registers.b); // Reset bit 6 of B
+}
+
+void cpu_cb_res_6_c() { // 0xB1
+	cpu_routine_res_n_8(6, cpu_registers.c); // Reset bit 6 of C
+}
+
+void cpu_cb_res_6_d() { // 0xB2
+	cpu_routine_res_n_8(6, cpu_registers.d); // Reset bit 6 of D
+}
+
+void cpu_cb_res_6_e() { // 0xB3
+	cpu_routine_res_n_8(6, cpu_registers.e); // Reset bit 6 of E
+}
+
+void cpu_cb_res_6_h() { // 0xB4
+	cpu_routine_res_n_8(6, cpu_registers.h); // Reset bit 6 of H
+}
+
+void cpu_cb_res_6_l() { // 0xB5
+	cpu_routine_res_n_8(6, cpu_registers.l); // Reset bit 6 of L
+}
+
+void cpu_cb_res_6_hl() { // 0xB6
+	cpu_routine_res_n_ptr_hl(6); // Reset bit 6 of (HL)
+}
+
+void cpu_cb_res_6_a() { // 0xB7
+	cpu_routine_res_n_8(6, cpu_registers.a); // Reset bit 6 of A
+}
+
+void cpu_cb_res_7_b() { // 0xB8
+	cpu_routine_res_n_8(7, cpu_registers.b); // Reset bit 7 of B
+}
+
+void cpu_cb_res_7_c() { // 0xB9
+	cpu_routine_res_n_8(7, cpu_registers.c); // Reset bit 7 of C
+}
+
+void cpu_cb_res_7_d() { // 0xBA
+	cpu_routine_res_n_8(7, cpu_registers.d); // Reset bit 7 of D
+}
+
+void cpu_cb_res_7_e() { // 0xBB
+	cpu_routine_res_n_8(7, cpu_registers.e); // Reset bit 7 of E
+}
+
+void cpu_cb_res_7_h() { // 0xBC
+	cpu_routine_res_n_8(7, cpu_registers.h); // Reset bit 7 of H
+}
+
+void cpu_cb_res_7_l() { // 0xBD
+	cpu_routine_res_n_8(7, cpu_registers.l); // Reset bit 7 of L
+}
+
+void cpu_cb_res_7_hl() { // 0xBE
+	cpu_routine_res_n_ptr_hl(7); // Reset bit 7 of (HL)
+}
+
+void cpu_cb_res_7_a() { // 0xBF
+	cpu_routine_res_n_8(7, cpu_registers.a); // Reset bit 7 of A
+}
