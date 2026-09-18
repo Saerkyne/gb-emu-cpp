@@ -2294,3 +2294,259 @@ void cpu_cb_res_7_hl() { // 0xBE
 void cpu_cb_res_7_a() { // 0xBF
 	cpu_routine_res_n_8(7, cpu_registers.a); // Reset bit 7 of A
 }
+
+void cpu_cb_set_0_b() { // 0xC0
+	cpu_routine_set_n_8(0, cpu_registers.b); // Set bit 0 of B
+}
+
+void cpu_cb_set_0_c() { // 0xC1
+	cpu_routine_set_n_8(0, cpu_registers.c); // Set bit 0 of C
+}
+
+void cpu_cb_set_0_d() { // 0xC2
+	cpu_routine_set_n_8(0, cpu_registers.d); // Set bit 0 of D
+}
+
+void cpu_cb_set_0_e() { // 0xC3
+	cpu_routine_set_n_8(0, cpu_registers.e); // Set bit 0 of E
+}
+
+void cpu_cb_set_0_h() { // 0xC4
+	cpu_routine_set_n_8(0, cpu_registers.h); // Set bit 0 of H
+}
+
+void cpu_cb_set_0_l() { // 0xC5
+	cpu_routine_set_n_8(0, cpu_registers.l); // Set bit 0 of L
+}
+
+void cpu_cb_set_0_hl() { // 0xC6
+	cpu_routine_set_n_ptr_hl(0); // Set bit 0 of (HL)
+}
+
+void cpu_cb_set_0_a() { // 0xC7
+	cpu_routine_set_n_8(0, cpu_registers.a); // Set bit 0 of A
+}
+
+void cpu_cb_set_1_b() { // 0xC8
+	cpu_routine_set_n_8(1, cpu_registers.b); // Set bit 1 of B
+}
+
+void cpu_cb_set_1_c() { // 0xC9
+	cpu_routine_set_n_8(1, cpu_registers.c); // Set bit 1 of C
+}
+
+void cpu_cb_set_1_d() { // 0xCA
+	cpu_routine_set_n_8(1, cpu_registers.d); // Set bit 1 of D
+}
+
+void cpu_cb_set_1_e() { // 0xCB
+	cpu_routine_set_n_8(1, cpu_registers.e); // Set bit 1 of E
+}
+
+void cpu_cb_set_1_h() { // 0xCC
+	cpu_routine_set_n_8(1, cpu_registers.h); // Set bit 1 of H
+}
+
+void cpu_cb_set_1_l() { // 0xCD
+	cpu_routine_set_n_8(1, cpu_registers.l); // Set bit 1 of L
+}
+
+void cpu_cb_set_1_hl() { // 0xCE
+	cpu_routine_set_n_ptr_hl(1); // Set bit 1 of (HL)
+}
+
+void cpu_cb_set_1_a() { // 0xCF
+	cpu_routine_set_n_8(1, cpu_registers.a); // Set bit 1 of A
+}
+
+void cpu_cb_set_2_b() { // 0xD0
+	cpu_routine_set_n_8(2, cpu_registers.b); // Set bit 2 of B
+}
+
+void cpu_cb_set_2_c() { // 0xD1
+	cpu_routine_set_n_8(2, cpu_registers.c); // Set bit 2 of C
+}
+
+void cpu_cb_set_2_d() { // 0xD2
+	cpu_routine_set_n_8(2, cpu_registers.d); // Set bit 2 of D
+}
+
+void cpu_cb_set_2_e() { // 0xD3
+	cpu_routine_set_n_8(2, cpu_registers.e); // Set bit 2 of E
+}
+
+void cpu_cb_set_2_h() { // 0xD4
+	cpu_routine_set_n_8(2, cpu_registers.h); // Set bit 2 of H
+}
+
+void cpu_cb_set_2_l() { // 0xD5
+	cpu_routine_set_n_8(2, cpu_registers.l); // Set bit 2 of L
+}
+
+void cpu_cb_set_2_hl() { // 0xD6
+	cpu_routine_set_n_ptr_hl(2); // Set bit 2 of (HL)
+}
+
+void cpu_cb_set_2_a() { // 0xD7
+	cpu_routine_set_n_8(2, cpu_registers.a); // Set bit 2 of A
+}
+
+void cpu_cb_set_3_b() { // 0xD8
+	cpu_routine_set_n_8(3, cpu_registers.b); // Set bit 3 of B
+}
+
+void cpu_cb_set_3_c() { // 0xD9
+	cpu_routine_set_n_8(3, cpu_registers.c); // Set bit 3 of C
+}
+
+void cpu_cb_set_3_d() { // 0xDA
+	cpu_routine_set_n_8(3, cpu_registers.d); // Set bit 3 of D
+}
+
+void cpu_cb_set_3_e() { // 0xDB
+	cpu_routine_set_n_8(3, cpu_registers.e); // Set bit 3 of E
+}
+
+void cpu_cb_set_3_h() { // 0xDC
+	cpu_routine_set_n_8(3, cpu_registers.h); // Set bit 3 of H
+}
+
+void cpu_cb_set_3_l() { // 0xDD
+	cpu_routine_set_n_8(3, cpu_registers.l); // Set bit 3 of L
+}
+
+void cpu_cb_set_3_hl() { // 0xDE
+	cpu_routine_set_n_ptr_hl(3); // Set bit 3 of (HL)
+}
+
+void cpu_cb_set_3_a() { // 0xDF
+	cpu_routine_set_n_8(3, cpu_registers.a); // Set bit 3 of A
+}
+
+void cpu_cb_set_4_b() { // 0xE0
+	cpu_routine_set_n_8(4, cpu_registers.b); // Set bit 4 of B
+}
+
+void cpu_cb_set_4_c() { // 0xE1
+	cpu_routine_set_n_8(4, cpu_registers.c); // Set bit 4 of C
+}
+
+void cpu_cb_set_4_d() { // 0xE2
+	cpu_routine_set_n_8(4, cpu_registers.d); // Set bit 4 of D
+}
+
+void cpu_cb_set_4_e() { // 0xE3
+	cpu_routine_set_n_8(4, cpu_registers.e); // Set bit 4 of E
+}
+
+void cpu_cb_set_4_h() { // 0xE4
+	cpu_routine_set_n_8(4, cpu_registers.h); // Set bit 4 of H
+}
+
+void cpu_cb_set_4_l() { // 0xE5
+	cpu_routine_set_n_8(4, cpu_registers.l); // Set bit 4 of L
+}
+
+void cpu_cb_set_4_hl() { // 0xE6
+	cpu_routine_set_n_ptr_hl(4); // Set bit 4 of (HL)
+}
+
+void cpu_cb_set_4_a() { // 0xE7
+	cpu_routine_set_n_8(4, cpu_registers.a); // Set bit 4 of A
+}
+
+void cpu_cb_set_5_b() { // 0xE8
+	cpu_routine_set_n_8(5, cpu_registers.b); // Set bit 5 of B
+}
+
+void cpu_cb_set_5_c() { // 0xE9
+	cpu_routine_set_n_8(5, cpu_registers.c); // Set bit 5 of C
+}
+
+void cpu_cb_set_5_d() { // 0xEA
+	cpu_routine_set_n_8(5, cpu_registers.d); // Set bit 5 of D
+}
+
+void cpu_cb_set_5_e() { // 0xEB
+	cpu_routine_set_n_8(5, cpu_registers.e); // Set bit 5 of E
+}
+
+void cpu_cb_set_5_h() { // 0xEC
+	cpu_routine_set_n_8(5, cpu_registers.h); // Set bit 5 of H
+}
+
+void cpu_cb_set_5_l() { // 0xED
+	cpu_routine_set_n_8(5, cpu_registers.l); // Set bit 5 of L
+}
+
+void cpu_cb_set_5_hl() { // 0xEE
+	cpu_routine_set_n_ptr_hl(5); // Set bit 5 of (HL)
+}
+
+void cpu_cb_set_5_a() { // 0xEF
+	cpu_routine_set_n_8(5, cpu_registers.a); // Set bit 5 of A
+}
+
+void cpu_cb_set_6_b() { // 0xF0
+	cpu_routine_set_n_8(6, cpu_registers.b); // Set bit 6 of B
+}
+
+void cpu_cb_set_6_c() { // 0xF1
+	cpu_routine_set_n_8(6, cpu_registers.c); // Set bit 6 of C
+}
+
+void cpu_cb_set_6_d() { // 0xF2
+	cpu_routine_set_n_8(6, cpu_registers.d); // Set bit 6 of D
+}
+
+void cpu_cb_set_6_e() { // 0xF3
+	cpu_routine_set_n_8(6, cpu_registers.e); // Set bit 6 of E
+}
+
+void cpu_cb_set_6_h() { // 0xF4
+	cpu_routine_set_n_8(6, cpu_registers.h); // Set bit 6 of H
+}
+
+void cpu_cb_set_6_l() { // 0xF5
+	cpu_routine_set_n_8(6, cpu_registers.l); // Set bit 6 of L
+}
+
+void cpu_cb_set_6_hl() { // 0xF6
+	cpu_routine_set_n_ptr_hl(6); // Set bit 6 of (HL)
+}
+
+void cpu_cb_set_6_a() { // 0xF7
+	cpu_routine_set_n_8(6, cpu_registers.a); // Set bit 6 of A
+}
+
+void cpu_cb_set_7_b() { // 0xF8
+	cpu_routine_set_n_8(7, cpu_registers.b); // Set bit 7 of B
+}
+
+void cpu_cb_set_7_c() { // 0xF9
+	cpu_routine_set_n_8(7, cpu_registers.c); // Set bit 7 of C
+}
+
+void cpu_cb_set_7_d() { // 0xFA
+	cpu_routine_set_n_8(7, cpu_registers.d); // Set bit 7 of D
+}
+
+void cpu_cb_set_7_e() { // 0xFB
+	cpu_routine_set_n_8(7, cpu_registers.e); // Set bit 7 of E
+}
+
+void cpu_cb_set_7_h() { // 0xFC
+	cpu_routine_set_n_8(7, cpu_registers.h); // Set bit 7 of H
+}
+
+void cpu_cb_set_7_l() { // 0xFD
+	cpu_routine_set_n_8(7, cpu_registers.l); // Set bit 7 of L
+}
+
+void cpu_cb_set_7_hl() { // 0xFE
+	cpu_routine_set_n_ptr_hl(7); // Set bit 7 of (HL)
+}
+
+void cpu_cb_set_7_a() { // 0xFF
+	cpu_routine_set_n_8(7, cpu_registers.a); // Set bit 7 of A
+}
