@@ -1332,8 +1332,8 @@ void cpu_ldh_c_a() { // 0xE2
 	uint32_t temp = (0xFF00 + (uint32_t)cpu_registers.c, cpu_registers.a);
 	core_advance_cpu_clocks(4);
 	// next two lines were left out of guide, going to comment them out for educational reasons.
-	// memory_bus_write(temp, cpu_registers.a);
-	// core_advance_cpu_clocks(4);
+	memory_bus_write(temp, cpu_registers.a);
+	core_advance_cpu_clocks(4);
 }
 
 void cpu_push_hl() { // 0xE5
