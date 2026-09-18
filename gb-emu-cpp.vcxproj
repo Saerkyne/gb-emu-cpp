@@ -161,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cart.h" />
+    <ClInclude Include="cart_type.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="cpu_instructions.h" />
     <ClInclude Include="cpu_routines.h" />
