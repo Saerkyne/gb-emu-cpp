@@ -290,3 +290,13 @@
 	reg8 = (reg8 << 1) | temp;												\
 	SET_FLAG_ZERO(reg8 == 0);												\
 }
+
+#define cpu_routine_rr_8(reg8) {					  						\
+	SET_FLAG_SUBTRACT(0);													\
+	SET_FLAG_HALF_CARRY(0);													\
+	uint32_t temp = GET_FLAG_CARRY;											\
+	SET_FLAG_CARRY((reg8 & 0x01) != 0); 									\
+	core_advance_cpu_clocks(4);												\
+	reg8 = (reg8 >> 1) | (temp << 7);										\
+	SET_FLAG_ZERO(reg8 == 0);												\
+}

@@ -285,14 +285,14 @@ const gb_cpu_pre_cb_instruction cb_instructions[256] = {
 	{ "RL L",			cpu_cb_rl_l			},	// 0x15
 	{ "RL (HL)",		cpu_cb_rl_hl		},	// 0x16
 	{ "RL A",			cpu_cb_rl_a			},	// 0x17
-	{ "RR B",			cpu_cb_rr_b		},	// 0x18
-	{ "RR C",			cpu_cb_rr_c		},	// 0x19
-	{ "RR D",			cpu_cb_rr_d		},	// 0x1A
-	{ "RR E",			cpu_cb_rr_e		},	// 0x1B
-	{ "RR H",			cpu_cb_rr_h		},	// 0x1C
-	{ "RR L",			cpu_cb_rr_l		},	// 0x1D
+	{ "RR B",			cpu_cb_rr_b			},	// 0x18
+	{ "RR C",			cpu_cb_rr_c			},	// 0x19
+	{ "RR D",			cpu_cb_rr_d			},	// 0x1A
+	{ "RR E",			cpu_cb_rr_e			},	// 0x1B
+	{ "RR H",			cpu_cb_rr_h			},	// 0x1C
+	{ "RR L",			cpu_cb_rr_l			},	// 0x1D
 	{ "RR (HL)",		cpu_cb_rr_hl		},	// 0x1E
-	{ "RR A",			cpu_cb_rr_a		},	// 0x1F
+	{ "RR A",			cpu_cb_rr_a			},	// 0x1F
 	{ "SLA B",			cpu_cb_sla_b		},	// 0x20
 	{ "SLA C",			cpu_cb_sla_c		},	// 0x21
 	{ "SLA D",			cpu_cb_sla_d		},	// 0x22

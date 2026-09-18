@@ -1576,3 +1576,45 @@ void cpu_cb_rl_hl() { // 0x16
 void cpu_cb_rl_a() { // 0x17
 	cpu_routine_rl_8(cpu_registers.a); // Rotate A left through carry
 }
+
+void cpu_cb_rr_b() { // 0x18
+	cpu_routine_rr_8(cpu_registers.b); // Rotate B right through carry
+}
+
+void cpu_cb_rr_c() { // 0x19
+	cpu_routine_rr_8(cpu_registers.c); // Rotate C right through carry
+}
+
+void cpu_cb_rr_d() { // 0x1A
+	cpu_routine_rr_8(cpu_registers.d); // Rotate D right through carry
+}
+
+void cpu_cb_rr_e() { // 0x1B
+	cpu_routine_rr_8(cpu_registers.e); // Rotate E right through carry
+}
+
+void cpu_cb_rr_h() { // 0x1C
+	cpu_routine_rr_8(cpu_registers.h); // Rotate H right through carry
+}
+
+void cpu_cb_rr_l() { // 0x1D
+	cpu_routine_rr_8(cpu_registers.l); // Rotate L right through carry
+}
+
+void cpu_cb_rr_hl() { // 0x1E
+	core_advance_cpu_clocks(4);
+	uint32_t temp = memory_bus_read(cpu_registers.hl);
+	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
+	SET_FLAG_HALF_CARRY(0);
+	uint32_t temp_c = GET_FLAG_CARRY;
+	SET_FLAG_CARRY((temp & 0x01) != 0);
+	temp = (temp >> 1) | (temp_c << 7);
+	SET_FLAG_ZERO(temp == 0);
+	core_advance_cpu_clocks(4);
+	memory_bus_write(cpu_registers.hl, temp);
+}
+
+void cpu_cb_rr_a() { // 0x1F
+	cpu_routine_rr_8(cpu_registers.a); // Rotate A right through carry
+}
