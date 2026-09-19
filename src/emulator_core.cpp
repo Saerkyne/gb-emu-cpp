@@ -1,5 +1,4 @@
 #include "emulator_core.h"
-
 #include "cart.h"
 #include "cpu.h"
 #include "timer.h"

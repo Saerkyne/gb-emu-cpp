@@ -2,6 +2,7 @@
 #include "cart.h"
 #include "timer.h"
 #include "interrupts.h"
+#include "debug_log.h"
 #include <stdio.h>
 
 uint8_t memory[MEMORY_SIZE];
@@ -96,20 +97,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value) {
 
 	if (addr >= 0xFF00 && addr <= 0xFF7F) { // I/O registers
 		if (addr == 0xFF02 && value == 0x81) { // Blargg tests serial output
-			// Original code: 
-			/*
+			
 			char c = memory[0xFF01];
-			printf("%c", c);
-			*/
-			const unsigned char c = memory[0xFF01];
-			// TEMP DEBUG OUTPUT: show printable chars directly, otherwise print hex escape so non-printables are visible.
-			if (c >= 32 && c <= 126) {
-				printf("%c", c);
-			} else {
-				printf("\\x%02X", c);
-			}
-			fflush(stdout);
-			memory[0xFF02] = value & 0x7F; // Clear bit 7
+			debug_log("%c", c);
+			
 		} else if (addr == 0xFF04) { // Timer DIV
 			timer_on_div_write(value);
 		} else if (addr == 0xFF07) { // Timer control

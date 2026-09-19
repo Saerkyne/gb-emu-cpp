@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdarg>
 
-bool log_to_console = false;
+bool log_to_console = true;
 bool log_to_file = true;
 static FILE* logfile = NULL;
 
@@ -17,7 +17,7 @@ void debug_log(const char* fmt, ...) {
 
 	if (log_to_file) {
 		if (!logfile) {
-			const errno_t err = fopen_s(&logfile, "../../../logs/logfile.txt", "w");
+			const errno_t err = fopen_s(&logfile, "./logs/logfile.txt", "w");
 			if (err != 0) {
 				printf("Failed to open logfile.txt for writing!\n");
 				log_to_file = false;

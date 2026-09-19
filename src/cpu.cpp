@@ -14,6 +14,7 @@ void* cpu_current_instruction_execute = nullptr; // Pointer to the current instr
 uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop instruction
 bool cpu_halt_bug = false;
 bool cpu_debug_instructions = true;
+bool ime_delay_occured = false; // Added to test IME set bug, used in conditional below.
 
 void cpu_reset() {
 	// AFter executing boot rom, registers should be set to the following values:
@@ -37,6 +38,17 @@ void cpu_tick() {
 	if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
 		cpu_debug_instructions = false;
 		debug_log_close_file();
+	}
+
+	// 9/19 17:54 - added below conditional to check if IME delay is set and occurred. If both true, set IME true.
+	if (interrupt_enable_ime_delay > 0 && !ime_delay_occured) {
+		ime_delay_occured = true;
+	} else if (interrupt_enable_ime_delay > 0 && ime_delay_occured) {
+		interrupt_enable_ime_delay--;
+		if (interrupt_enable_ime_delay == 0) {
+			interrupt_master_enable = true;
+			ime_delay_occured = false;
+		}
 	}
 
 	interrupt_service_routine();
@@ -1458,7 +1470,7 @@ void cpu_ld_hl_sp_n() { // 0xF8
 	SET_FLAG_ZERO(0);
 	SET_FLAG_SUBTRACT(0);
 	SET_FLAG_HALF_CARRY(((cpu_registers.sp & 0x000F) + (temp & 0x000F)) > 0x000F);
-	SET_FLAG_CARRY(((cpu_registers.sp & 0xFFFF) + (temp & 0x00FF)) > 0x00FF);
+	SET_FLAG_CARRY(((cpu_registers.sp & 0x00FF) + (temp & 0x00FF)) > 0x00FF);
 }
 
 void cpu_ld_sp_hl() { // 0xF9
