@@ -1,0 +1,20 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\users\\jthubbard\\onedrive - randolph community college\\documents\\coding\\gb-emu-cpp\\emulator_core.cpp",
+        "ProvidedModule": "",
+        "Includes": [
+            "c:\\users\\jthubbard\\onedrive - randolph community college\\documents\\coding\\gb-emu-cpp\\emulator_core.h",
+            "c:\\program files\\microsoft visual studio\\18\\community\\vc\\tools\\msvc\\14.51.36231\\include\\stdint.h",
+            "c:\\program files\\microsoft visual studio\\18\\community\\vc\\tools\\msvc\\14.51.36231\\include\\vcruntime.h",
+            "c:\\program files\\microsoft visual studio\\18\\community\\vc\\tools\\msvc\\14.51.36231\\include\\sal.h",
+            "c:\\program files\\microsoft visual studio\\18\\community\\vc\\tools\\msvc\\14.51.36231\\include\\concurrencysal.h",
+            "c:\\program files\\microsoft visual studio\\18\\community\\vc\\tools\\msvc\\14.51.36231\\include\\vadefs.h",
+            "c:\\users\\jthubbard\\onedrive - randolph community college\\documents\\coding\\gb-emu-cpp\\cart.h",
+            "c:\\users\\jthubbard\\onedrive - randolph community college\\documents\\coding\\gb-emu-cpp\\cpu.h",
+            "c:\\users\\jthubbard\\onedrive - randolph community college\\documents\\coding\\gb-emu-cpp\\timer.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

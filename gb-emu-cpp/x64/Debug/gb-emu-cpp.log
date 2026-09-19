@@ -1,0 +1,16 @@
+﻿  cpu.cpp
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(920,2): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(924,2): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(928,2): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(932,2): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(936,2): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(940,2): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(1125,2): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(1271,2): warning C4018: '<': signed/unsigned mismatch
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(1316,20): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\cpu.cpp(1385,19): warning C4552: '&': result of expression not used
+  cpu_instructions.cpp
+  emulator_core.cpp
+  interrupts.cpp
+  Generating Code...
+  gb-emu-cpp.vcxproj -> C:\Users\jthubbard\OneDrive - Randolph Community College\Documents\Coding\gb-emu-cpp\x64\Debug\gb-emu-cpp.exe
