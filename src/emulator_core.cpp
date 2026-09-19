@@ -9,9 +9,9 @@ uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
 
 int core_init() {
-	const char* tetris_path = "C:\\Users\\jthubbard\\OneDrive - Randolph Community College\\Documents\\Coding\\gb-emu-cpp\\rom\\cpu_instrs.gb";
+	const char* cart_path = "./rom/cpu_instrs.gb";
 
-	if (!cart_load(tetris_path)) {
+	if (!cart_load(cart_path)) {
 		return -1;
 	}
 

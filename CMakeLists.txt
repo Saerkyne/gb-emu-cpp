@@ -40,7 +40,6 @@ add_executable(gb-emu-cpp
   src/interrupts.h
   src/memory_bus.cpp
   src/memory_bus.h
-  src/resource.h
   src/timer.cpp
   src/timer.h
 )
@@ -57,4 +56,9 @@ add_custom_command(TARGET gb-emu-cpp POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           $<TARGET_RUNTIME_DLLS:gb-emu-cpp> $<TARGET_FILE_DIR:gb-emu-cpp>
   COMMAND_EXPAND_LISTS
+)
+
+# Keep runtime relative paths based on repo root during debugging in Visual Studio
+set_target_properties(gb-emu-cpp PROPERTIES
+  VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
