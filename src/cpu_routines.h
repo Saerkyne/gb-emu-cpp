@@ -42,8 +42,6 @@
 
 #define cpu_routine_inc_8(reg8) {                   	\
 		SET_FLAG_SUBTRACT(0);                     		\
-		/* OLD (kept for reference): SET_FLAG_HALF_CARRY((reg8 & 0xF) == 0x0); */ \
-		/* TEMP DEBUG FIX: INC sets H when lower nibble overflows from 0xF to 0x0. */ \
 		SET_FLAG_HALF_CARRY((reg8 & 0xF) == 0xF); 		\
 		reg8++;                                   		\
 		SET_FLAG_ZERO(reg8 == 0);                 		\
@@ -139,7 +137,6 @@
 	}
 
 #define cpu_routine_cp_a_8(reg8) {                                     	\
-		/* TEMP DEBUG FIX: CP is a subtraction compare, so N must be set. */ \
 		SET_FLAG_SUBTRACT(1);                                        	\
 		SET_FLAG_HALF_CARRY((cpu_registers.a & 0xF) < (reg8 & 0xF)); 	\
 		SET_FLAG_CARRY((uint32_t)cpu_registers.a < (uint32_t)reg8);  	\
@@ -163,8 +160,6 @@
 		core_advance_cpu_clocks(4);                               		\
 	}
 
-// TODO: check if the second memory bus write should be the low byte.
-// Original implementation used high byte.
 #define cpu_routine_push_16(reg_high, reg_low) {        	\
 		core_advance_cpu_clocks(4);                   		\
 		cpu_registers.sp--;                           		\
@@ -255,9 +250,8 @@
 #define cpu_routine_jr_conditional_n(cond) {                                \
 		core_advance_cpu_clocks(4);                                       	\
 		if (cond) {                                                         \
-			uint32_t temp = memory_bus_read(cpu_registers.pc++);          	\
-			core_advance_cpu_clocks(4);                                   	\
-			/* changed the int8 cast to int8_t */						  	\
+			uint8_t temp = memory_bus_read(cpu_registers.pc++);          	\
+			core_advance_cpu_clocks(4);             					  	\
 			cpu_registers.pc = (cpu_registers.pc + (int8_t)temp) & 0xFFFF;	\
 			core_advance_cpu_clocks(4);                                    	\
 		} else {                                                            \

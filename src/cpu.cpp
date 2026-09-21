@@ -40,17 +40,6 @@ void cpu_tick() {
 		debug_log_close_file();
 	}
 
-	// 9/19 17:54 - added below conditional to check if IME delay is set and occurred. If both true, set IME true.
-	if (interrupt_enable_ime_delay > 0 && !ime_delay_occured) {
-		ime_delay_occured = true;
-	} else if (interrupt_enable_ime_delay > 0 && ime_delay_occured) {
-		interrupt_enable_ime_delay--;
-		if (interrupt_enable_ime_delay == 0) {
-			interrupt_master_enable = true;
-			ime_delay_occured = false;
-		}
-	}
-
 	interrupt_service_routine();
 }
 
@@ -409,7 +398,7 @@ void cpu_inc__hl() { // 0x34
 	uint32_t temp = memory_bus_read(cpu_registers.hl); // Read the value from memory at HL into a temporary variable
 	core_advance_cpu_clocks(4);
 	SET_FLAG_SUBTRACT(0);
-	SET_FLAG_HALF_CARRY((temp & 0xF) == 0);
+	SET_FLAG_HALF_CARRY((temp & 0xF) == 0xF);
 	temp = (temp + 1) & 0xFF;
 	SET_FLAG_ZERO(temp == 0);
 	core_advance_cpu_clocks(4);
@@ -420,8 +409,6 @@ void cpu_dec__hl() { // 0x35
 	core_advance_cpu_clocks(4);
 	uint32_t temp = memory_bus_read(cpu_registers.hl); // Read the value from memory at HL into a temporary variable
 	core_advance_cpu_clocks(4);
-	// Might be a bug, leaving for educational reasons
-	// OLD (kept for reference): SET_FLAG_SUBTRACT(0);
 	SET_FLAG_SUBTRACT(1);
 	SET_FLAG_HALF_CARRY((temp & 0xF) == 0);
 	temp = (temp - 1) & 0xFF;
@@ -872,15 +859,13 @@ void cpu_adc_a_hl() { // 0x8E
 }
 
 void cpu_adc_a_a() { // 0x8F
-	// Might be missing the actual addition of the A register and the carry flag to itself
 	core_advance_cpu_clocks(4);
 	SET_FLAG_SUBTRACT(0);
 	uint32_t temp = (((uint32_t)cpu_registers.a) << 1) + GET_FLAG_CARRY;
 	SET_FLAG_HALF_CARRY((cpu_registers.a & 0x08) != 0);
 	SET_FLAG_CARRY(temp > 0xFF);
 	temp &= 0xFF;
-	// OLD (kept for reference): this function previously only updated flags and did not write temp back into A.
-	cpu_registers.a = (uint8_t)temp;
+	cpu_registers.a = temp;
 	SET_FLAG_ZERO(temp == 0);
 }
 
@@ -1626,6 +1611,7 @@ void cpu_cb_rl_hl() { // 0x16
 	uint32_t temp_c = GET_FLAG_CARRY;
 	SET_FLAG_CARRY((temp & 0x80) != 0);
 	temp = ((temp << 1) | temp_c) & 0xFF;
+	SET_FLAG_ZERO(temp == 0);
 	core_advance_cpu_clocks(4);
 	memory_bus_write(cpu_registers.hl, temp);
 }

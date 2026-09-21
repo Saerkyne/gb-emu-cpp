@@ -1,4 +1,5 @@
 #include "cart.h"
+#include "cart_type.h"
 #include <iostream>
 #include <fstream>
 #include <Windows.h>
@@ -17,7 +18,6 @@ bool get_runtime_path() {
 	return true;
 }
 
-// Opens a default file dialog to select a Game Boy ROM. Not used currently, but could be useful for future GUI implementation.
 bool cart_open_file() {
 	if (!get_runtime_path()) {
 		return false;
@@ -54,7 +54,7 @@ void cart_print_info() {
 	printf("CGB Flag: %.2X\n", cartridge_header->cgb_flag);
 	printf("New Licensee Code: %.2X%.2X\n", cartridge_header->new_licensee_code[0], cartridge_header->new_licensee_code[1]);
 	printf("SGB Flag: %.2X\n", cartridge_header->sgb_flag);
-	printf("Cartridge Type: %.2X\n", cartridge_header->cartridge_type);
+	printf("Cartridge Type: %.2X\n", cartridge_header->cartridge_type, cart_type_data[cartridge_header->cartridge_type].readable_name);
 	printf("ROM Size: %.2X\n", cartridge_header->rom_size);
 	printf("RAM Size: %.2X\n", cartridge_header->ram_size);
 	printf("Destination Code: %.2X\n", cartridge_header->destination_code);

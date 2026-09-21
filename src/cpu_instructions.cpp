@@ -244,7 +244,7 @@ const struct gb_cpu_instruction instructions[256] = {
 	{ "RST 28h",		0,		cpu_rst_28		},	// 0xEF
 	{ "LD A, (n)",		1,		cpu_ldh_a_n		},	// 0xF0
 	{ "POP AF", 		0,		cpu_pop_af		},	// 0xF1
-	{ "LD A, (C)", 		0,		cpu_ld_a_c		},	// 0xF2
+	{ "LD A, (C)", 		0,		cpu_ldh_a_c		},	// 0xF2
 	{ "DI", 			0,		cpu_di			},	// 0xF3
 	{ "???",			0,		nullptr			},	// 0xF4
 	{ "PUSH AF",		0,		cpu_push_af		},	// 0xF5
