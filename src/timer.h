@@ -3,10 +3,10 @@
 #include <stdint.h>
 
 struct gb_timer_registers {
-    uint8_t timer_div;   // Divider register
-    uint8_t timer_tima;  // Timer counter
-    uint8_t timer_tma;   // Timer modulo
-    uint8_t timer_tac;   // Timer control
+	uint8_t timer_div;	// Divider register
+	uint8_t timer_tima; // Timer counter
+	uint8_t timer_tma;	// Timer modulo
+	uint8_t timer_tac;	// Timer control
 };
 
 extern gb_timer_registers* timer_registers;

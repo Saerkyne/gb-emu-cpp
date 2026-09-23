@@ -1,0 +1,48 @@
+# Generated to mirror .editorconfig C++ formatting settings as closely as clang-format allows.
+# Note: Some Visual Studio-specific cpp_* settings in .editorconfig have no clang-format equivalent.
+BasedOnStyle: LLVM
+
+# Indentation
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
+ContinuationIndentWidth: 4
+IndentCaseLabels: true
+IndentCaseBlocks: true
+IndentGotoLabels: true
+IndentPPDirectives: None
+AccessModifierOffset: -4
+NamespaceIndentation: All
+
+# Braces and one-liners
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: false
+
+# Spacing
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceInEmptyParentheses: false
+SpacesInSquareBrackets: false
+SpaceBeforeSquareBrackets: false
+SpaceBeforeCpp11BracedList: false
+SpacesInContainerLiterals: true
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: true
+SpaceBeforeAssignmentOperators: true
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
+# Wrapping/alignment behavior
+AlignAfterOpenBracket: Align
+ColumnLimit: 0
+ReflowComments: false
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Preserve

@@ -1,6 +1,6 @@
 #include "debug_log.h"
-#include <iostream>
 #include <cstdarg>
+#include <iostream>
 
 bool log_to_console = true;
 bool log_to_file = true;

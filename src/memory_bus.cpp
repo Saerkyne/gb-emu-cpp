@@ -1,9 +1,9 @@
 #include "memory_bus.h"
 #include "cart.h"
 #include "cart_type.h"
-#include "timer.h"
-#include "interrupts.h"
 #include "debug_log.h"
+#include "interrupts.h"
+#include "timer.h"
 #include <stdio.h>
 
 uint8_t memory[MEMORY_SIZE];
@@ -29,60 +29,64 @@ uint8_t memory_bus_read(const uint16_t addr) {
 			uint8_t rom_bank = rom_bank_number > 0 ? rom_bank_number : 1;
 			const uint32_t offset = ROM_BANK_SIZE * (rom_bank - 1);
 			return cartridge_data[offset + addr];
-		}
-		return cartridge_data[addr];
-	}
-
-	if (addr >= 0x8000 && addr <= 0x9FFF) { // VRAM
-		return memory[addr];
-	}
-
-	if (addr >= 0xA000 && addr <= 0xBFFF) { // External RAM
-		if (cart_info.type == CART_TYPE::NO_MBC) {
-			const uint16_t eram_address = (addr - 0xA000);
-			return eram[eram_address];
-		} else if (cart_info.type == CART_TYPE::MBC1) {
-			const uint16_t bank_offset = ram_bank_number * 0x2000; // 8k per RAM bank
-			const uint16_t eram_address = (addr - 0xA000) + bank_offset;
-			return eram[eram_address];
+		} else if (cart_info.type == CART_TYPE::MBC2) {
+			const uint16_t ROM_BANK_SIZE = 0x4000;											//16k per ROM bank, up to 16 banks
+			uint8_t rom_bank = (rom_bank_number & 0x0F) > 0 ? (rom_bank_number & 0x0F) : 1; // MBC2 has only 4 bits for ROM bank number
 		}
 	}
+	return cartridge_data[addr];
+}
 
-	if (addr >= 0xC000 && addr <= 0xCFFF) { // Work RAM 1
-		return memory[addr];
+if (addr >= 0x8000 && addr <= 0x9FFF) { // VRAM
+	return memory[addr];
+}
+
+if (addr >= 0xA000 && addr <= 0xBFFF) { // External RAM
+	if (cart_info.type == CART_TYPE::NO_MBC) {
+		const uint16_t eram_address = (addr - 0xA000);
+		return eram[eram_address];
+	} else if (cart_info.type == CART_TYPE::MBC1) {
+		const uint16_t bank_offset = ram_bank_number * 0x2000; // 8k per RAM bank
+		const uint16_t eram_address = (addr - 0xA000) + bank_offset;
+		return eram[eram_address];
 	}
+}
 
-	if (addr >= 0xD000 && addr <= 0xDFFF) { // Work RAM 2
-		return memory[addr];
-	}
+if (addr >= 0xC000 && addr <= 0xCFFF) { // Work RAM 1
+	return memory[addr];
+}
 
-	if (addr >= 0xE000 && addr <= 0xFDFF) { // Echo RAM (Mirror of C000-DDFF)
-		return memory[addr - 0x2000];
-	}
+if (addr >= 0xD000 && addr <= 0xDFFF) { // Work RAM 2
+	return memory[addr];
+}
 
-	if (addr >= 0xFE00 && addr <= 0xFE9F) { // Object Attribute Memory (sprite attribute table)
-		// TODO: If PPU mode == 2 return 0xFF
-		return memory[addr];
-	}
+if (addr >= 0xE000 && addr <= 0xFDFF) { // Echo RAM (Mirror of C000-DDFF)
+	return memory[addr - 0x2000];
+}
 
-	if (addr >= 0xFEA0 && addr <= 0xFEFF) { // Unused memory area
-		// TODO: return 0xFF if PPU is in mode 3 
-		return 0x00;
-	}
+if (addr >= 0xFE00 && addr <= 0xFE9F) { // Object Attribute Memory (sprite attribute table)
+	// TODO: If PPU mode == 2 return 0xFF
+	return memory[addr];
+}
 
-	if (addr >= 0xFF00 && addr <= 0xFF7F) { // I/O Registers
-		return memory[addr];
-	}
+if (addr >= 0xFEA0 && addr <= 0xFEFF) { // Unused memory area
+	// TODO: return 0xFF if PPU is in mode 3
+	return 0x00;
+}
 
-	if (addr >= 0xFF80 && addr <= 0xFFFE) { // High RAM
-		return memory[addr];
-	}
+if (addr >= 0xFF00 && addr <= 0xFF7F) { // I/O Registers
+	return memory[addr];
+}
 
-	if (addr == 0xFFFF) { // Interrupt Enable Register
-		return memory[addr];
-	}
+if (addr >= 0xFF80 && addr <= 0xFFFE) { // High RAM
+	return memory[addr];
+}
 
-	return 0xFF;
+if (addr == 0xFFFF) { // Interrupt Enable Register
+	return memory[addr];
+}
+
+return 0xFF;
 }
 
 void memory_bus_write(const uint16_t addr, const uint8_t value) {
@@ -147,15 +151,15 @@ void memory_bus_write(const uint16_t addr, const uint8_t value) {
 	}
 
 	if (addr >= 0xFEA0 && addr <= 0xFEFF) { // Unused memory area
-		// All writes here are ignored
+											// All writes here are ignored
 	}
 
-	if (addr >= 0xFF00 && addr <= 0xFF7F) { // I/O registers
+	if (addr >= 0xFF00 && addr <= 0xFF7F) {	   // I/O registers
 		if (addr == 0xFF02 && value == 0x81) { // Blargg tests serial output
-			
+
 			char c = memory[0xFF01];
 			debug_log("%c", c);
-			
+
 		} else if (addr == 0xFF04) { // Timer DIV
 			timer_on_div_write(value);
 		} else if (addr == 0xFF07) { // Timer control
@@ -180,6 +184,4 @@ void memory_bus_write(const uint16_t addr, const uint8_t value) {
 	if (addr == 0xFFFF) { // Interrupt Enable
 		interrupt_enable_write(value);
 	}
-
-	
 }

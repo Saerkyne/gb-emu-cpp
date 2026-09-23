@@ -16,7 +16,7 @@ int SDLCALL gb_emu_runapp_callback(int argc, char* argv[]) {
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
 		return -1;
 	}
-	
+
 	int error = core_init();
 	if (error != 0) {
 		return error;
@@ -30,4 +30,3 @@ int SDLCALL gb_emu_runapp_callback(int argc, char* argv[]) {
 
 	return 0;
 }
-
