@@ -94,19 +94,24 @@ void memory_bus_write(const uint16_t addr, const uint8_t value) {
 	const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
 	if (cart_info.type == CART_TYPE::MBC1) {
 		if (addr >= 0x0000 && addr <= 0x1FFF) { // RAM Enable
-			ram_enabled = (value & 0xF0) == 0x0A;
+			// When 0x0A (0b1010) is written to this register, enable RAM chip access.
+			// When anything else is written, disable RAM chip access.
+			// The register only checks the lower 4 bits of the value written, so 0x0A, 0x1A, 0x2A, etc. will all enable RAM access.
+			ram_enabled = (value & 0x0F) == 0x0A;
 		}
 
-		if (addr >= 0x2000 && addr <= 0x3FFF) {
-			rom_bank_number = value & 0b00011111; // This is a 5-bit register
+		if (addr >= 0x2000 && addr <= 0x3FFF) { // ROM Bank Register 1 (5 bits)
+			// This value can never be 0b00000, it will always default to  0b00001
+			// This means that half of the bank registers are not accessible.
+			rom_bank_number = value & 0b00011111;
 			const uint32_t rom_size = 32 * (1 << cartridge_header->rom_size);
 			const uint8_t number_of_rom_banks = rom_size / 16;
 			rom_bank_number = rom_bank_number % number_of_rom_banks;
 		}
 
-		if (addr >= 0x4000 && addr <= 0x5FFF) {
+		if (addr >= 0x4000 && addr <= 0x5FFF) { // ROM Bank Register 2 (2 bits) or RAM Bank Register (2 bits)
 			if (rom_ram_mode_select) {
-				ram_bank_number = value & 0b00000011; // This is a 2-bit register
+				ram_bank_number = value & 0b00000011;
 			} else {
 				rom_bank_number = (rom_bank_number & 0b00011111) | ((value & 0b00000011) << 5);
 			}
