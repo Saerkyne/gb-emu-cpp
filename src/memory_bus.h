@@ -4,6 +4,7 @@
 
 #define CLEAR_BIT(number, bit)        number &= ~(1UL << bit)
 #define CHECK_BIT(number, bit)        ((number >> bit) & 1U)
+#define CHANGE_BIT(number, value, bit) number ^= (-value ^ number) & (1UL << bit)
 #define BIT(n)  (1 << (n))
 
 const uint16_t ADDR_IO_IF = 0xFF0F; // Interrupt Flag
