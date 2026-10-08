@@ -2,11 +2,16 @@
 #include "cart.h"
 #include "cpu.h"
 #include "interrupts.h"
+#include "ppu.h"
 #include "timer.h"
 
+gfx_context* gfx_debug_ctx = nullptr;
+gfx_context* gfx_render_ctx = nullptr;
 
 uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
+
+void core_init_gfx_contexts();
 
 int core_init() {
 
@@ -15,6 +20,8 @@ int core_init() {
 	}
 
 	cart_print_info();
+
+	core_init_gfx_contexts();
 
 	return 0;
 }
@@ -45,4 +52,17 @@ void core_advance_cpu_clocks(uint8_t clocks) {
 			}
 		}
 	}
+}
+
+void core_init_gfx_contexts()
+{
+	const SDL_Color COLOR_BLACK = { 0, 0, 0, 0 };
+
+	gfx_debug_ctx = gfx_init(256, 256, "Debug");
+	gfx_clear(gfx_debug_ctx, COLOR_BLACK);
+	gfx_update(gfx_debug_ctx);
+
+	gfx_render_ctx = gfx_init(LCD_PIXELS_WIDTH * PPU_RENDER_SCALE, LCD_PIXELS_HEIGHT * PPU_RENDER_SCALE, "GoodBoy");
+	gfx_clear(gfx_render_ctx, COLOR_BLACK);
+	gfx_update(gfx_render_ctx);
 }
