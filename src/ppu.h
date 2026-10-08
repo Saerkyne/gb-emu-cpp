@@ -64,6 +64,9 @@ void ppu_init();
 void ppu_reset();
 void ppu_advance_clocks(const uint8_t clocks);
 
+void ppu_check_ly_compare();
+void ppu_check_stat_signal();
+
 void ppu_on_lyc_write(const uint8_t value);
 void ppu_on_lcd_control_write(const uint8_t value);
 void ppu_on_lcd_status_write(const uint8_t value);
