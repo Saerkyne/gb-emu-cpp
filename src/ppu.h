@@ -44,6 +44,8 @@ struct pixel_fifo_data {
 	bool from_sprite;
 };
 
+extern lcd_registers* ppu_lcd_registers;
+
 // LCD Control Flags
 #define LCDC_ENABLE_LCD CHECK_BIT(ppu_lcd_registers->control, 7)
 #define LCDC_WINDOW_TILE_MAP_SELECT CHECK_BIT(ppu_lcd_registers->control, 6)
