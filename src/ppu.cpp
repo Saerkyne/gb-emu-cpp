@@ -17,11 +17,35 @@ uint8_t ppu_oam_search_index = 0;
 oam_buffer_data ppu_oam_buffer[10] = {
 	{ 0, false }, { 0, false }, { 0, false }, { 0, false }, { 0, false },
 	{ 0, false }, { 0, false }, { 0, false }, { 0, false }, { 0, false }
-}
+};
+
+uint8_t ppu_fetcher_internal_clock = 0;
+bool ppu_fetcher_sprite_active = false;
+uint8_t ppu_oam_sprite_fetcher_index = 0;
+uint16_t ppu_fetcher_tile_no = 0;
+bool ppu_fetcher_window_pixels = false;
+uint8_t ppu_fetcher_internal_x_pos = 0;
+uint8_t ppu_fetcher_window_line_counter = 0;
+uint8_t ppu_fetcher_tile_data[2] = { 0, 0 };
+uint8_t ppu_pixel_fifo_cursor = 0;
+pixel_fifo_data ppu_pixel_fifo[16] = {
+	{ 0, false }, { 0, false }, { 0, false }, { 0, false },
+	{ 0, false }, { 0, false }, { 0, false }, { 0, false },
+	{ 0, false }, { 0, false }, { 0, false }, { 0, false },
+	{ 0, false }, { 0, false }, { 0, false }, { 0, false }
+};
+uint8_t ppu_pixel_fifo_occupancy = 0;
+bool ppu_fetcher_first_scanline_steps = false;
+int16_t ppu_shifter_pixel_x = 0;
+uint8_t ppu_discard_pixels = 0;
 
 void ppu_oam_search_tick();
 void ppu_fetcher_tick();
 void ppu_shifter_tick();
+void ppu_set_lcd_mode(uint8_t new_mode);
+void ppu_fetcher_reset();
+
+void extract_palette(uint16_t address, uint8_t* palette);
 
 void ppu_init()
 {
@@ -59,19 +83,70 @@ void ppu_advance_clocks(const uint8_t clocks)
 			if (ppu_scanline_dot == 79)
 			{
 				ppu_set_lcd_mode(LCDS_MODE_3_DRAWING);
+				ppu_discard_pixels = ppu_lcd_registers->scx % 8;
 			}
 		}
 		else if (ppu_mode == LCDS_MODE_3_DRAWING)
 		{
-			// Tick pixel fetcher and pixel shifter
+			ppu_fetcher_tick();
+			ppu_shifter_tick();
+			if (LCDS_PPU_MODE != LCDS_MODE_3_DRAWING)
+			{
+				continue;
+			}
 		}
-		else if (ppu_mode == LCDS_MODE_0_HBLANK)
+		else if (ppu_mode == LCDS_MODE_0_H_BLANK)
 		{
-			
+			if (ppu_first_frame_after_lcd_enable && ppu_lcd_registers->ly == 0)
+			{
+				if (ppu_scanline_dot == 79)
+				{
+					ppu_set_lcd_mode(LCDS_MODE_3_DRAWING);
+				}
+				else if (ppu_scanline_dot == 451)
+				{
+					ppu_scanline_dot = 0;
+					ppu_lcd_registers->ly++;
+					ppu_check_ly_compare();
+					continue;
+				}
+			}
+			else if (ppu_scanline_dot == 455)
+			{
+				ppu_scanline_dot = 0;
+				ppu_lcd_registers->ly++;
+				if (ppu_lcd_registers->ly == 144)
+				{
+					ppu_set_lcd_mode(LCDS_MODE_1_V_BLANK);
+					interrupt_raise_flag(INTERRUPT_FLAG_VBLANK);
+					ppu_check_ly_compare();
+				}
+				else
+				{
+					ppu_set_lcd_mode(LCDS_MODE_2_OAM_SEARCH);
+					ppu_check_ly_compare();
+				}
+				continue;
+			}
 		}
-		else if (ppu_mode == LCDS_MODE_1_VBLANK)
+		else if (ppu_mode == LCDS_MODE_1_V_BLANK)
 		{
-			
+			if (ppu_scanline_dot == 455)
+			{
+				ppu_scanline_dot = 0;
+				ppu_lcd_registers->ly++;
+				ppu_check_ly_compare();
+				if (ppu_lcd_registers->ly == 154)
+				{
+					ppu_lcd_registers->ly = 0;
+					render_frame();
+					render_debug();
+					ppu_set_lcd_mode(LCDS_MODE_2_OAM_SEARCH);
+					ppu_first_frame_after_lcd_enable = false;
+				}
+				ppu_check_ly_compare();
+				continue;
+			}
 		}
 		ppu_scanline_dot++;
 	}
@@ -85,7 +160,7 @@ void ppu_check_ly_compare()
 	}
 	else
 	{
-		CHANGE_BIT(ppu_lcd_registers->status, 0, 2)
+		CHANGE_BIT(ppu_lcd_registers->status, 0, 2);
 	}
 }
 
@@ -98,8 +173,8 @@ void ppu_check_stat_signal()
 	const uint8_t ppu_mode = LCDS_PPU_MODE;
 	if (((ppu_lcd_registers->ly == ppu_lcd_registers->lyc) && LCDS_LYC_EQUALS_LY_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
-		((ppu_mode == LCDS_MODE_1_VBLANK) && LCDS_MODE_1_STAT_INTERRUPT_ENABLE) ||
-		((ppu_mode == LCDS_MODE_0_HBLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE))
+		((ppu_mode == LCDS_MODE_1_V_BLANK) && LCDS_MODE_1_STAT_INTERRUPT_ENABLE) ||
+		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE))
 	{
 		interrupt_raise_flag(INTERRUPT_FLAG_STAT);
 	}
@@ -127,15 +202,16 @@ void ppu_set_lcd_mode(uint8_t new_mode)
 		ppu_check_stat_signal();
 		if (new_mode == LCDS_MODE_1_V_BLANK)
 		{
-			// ppu fetcher reset
+			ppu_fetcher_reset();
 		}
 		else if (new_mode == LCDS_MODE_2_OAM_SEARCH)
 		{
-			// ppu_oam_search_index reset
+			ppu_oam_search_index = 0;
+			ppu_oam_buffer_count = 0;
 		}
 		else if (new_mode == LCDS_MODE_3_DRAWING)
 		{
-			// memset(ppu_pixel_fifo, 0, sizeof(ppu_pixel_fifo));
+			memset(ppu_pixel_fifo, 0, sizeof(ppu_pixel_fifo));
 		}
 	}
 }
@@ -174,9 +250,50 @@ void ppu_on_palette_write(const uint16_t addr)
 	if (addr == 0xFF49) extract_palette(addr, background_palette);
 }
 
+const SDL_Color ppu_lcd_color_lit = { 223, 230, 179, 255 };
+const SDL_Color ppu_gb_colors[4] = {
+	{ 185, 200, 90, 255 }, 
+	{ 131, 145, 0, 255 },
+	{ 74, 82, 4, 255 },   
+	{ 40, 44, 4, 255 }      
+};
+
+
 void render_frame()
 {
+	void* pixels = NULL;
+	uint8_t* base = NULL;
+	int pitch = 0;
+	int result = SDL_LockTexture(gfx_render_ctx->texture, NULL, &pixels, &pitch);
+	SDL_SetRenderDrawColor(gfx_render_ctx->renderer, ppu_lcd_color_lit.r, ppu_lcd_color_lit.g, ppu_lcd_color_lit.b, ppu_lcd_color_lit.a);
+	result = SDL_RenderClear(gfx_render_ctx->renderer);
+	if (!LCDC_ENABLE_LCD || ppu_first_frame_after_lcd_enable)
+	{
+		SDL_RenderPresent(gfx_render_ctx->renderer);
+		return;
+	}
 
+	for (uint16_t y = 0; y < LCD_PIXELS_HEIGHT; y++)
+	{
+		for (uint16_t x = 0; x < LCD_PIXELS_WIDTH; x++)
+		{
+			const uint32_t index = (y * LCD_PIXELS_WIDTH) + x;
+			const uint8_t color_index = frame_pixels[index];
+			const SDL_Color& color = ppu_gb_colors[color_index];
+			base = ((uint8_t*)pixels) + (4 * ((y * LCD_PIXELS_WIDTH * PPU_RENDER_SCALE) + x));
+			base[0] = color.a;
+			base[1] = color.b;
+			base[2] = color.g;
+			base[3] = color.r;
+		}
+	}
+
+	SDL_UnlockTexture(gfx_render_ctx->texture);
+	SDL_FRect src_rect = { 0, 0, LCD_PIXELS_WIDTH, LCD_PIXELS_HEIGHT };
+	result = SDL_RenderTexture(gfx_render_ctx->renderer, gfx_render_ctx->texture, &src_rect, NULL);
+	SDL_RenderPresent(gfx_render_ctx->renderer);
+
+	memset(frame_pixels, 0, LCD_PIXELS_WIDTH * LCD_PIXELS_HEIGHT);
 }
 
 void render_debug()
@@ -215,23 +332,19 @@ void ppu_oam_search_tick()
 	ppu_oam_search_index++;
 }
 
-uint8_t ppu_fetcher_internal_clock = 0;
-bool ppu_fetcher_sprite_active = false;
-uint8_t ppu_oam_sprite_fetcher_index = 0;
-uint16_t ppu_fetcher_tile_no = 0;
-bool ppu_fetcher_window_pixels = false;
-uint8_t ppu_fetcher_internal_x_pos = 0;
-uint8_t ppu_fetcher_window_line_counter = 0;
-uint8_t ppu_fetcher_tile_data[2] = { 0, 0 };
-uint8_t ppu_pixel_fifo_cursor = 0;
-pixel_fifo_data ppu_pixel_fifo[16] = {
-	{ 0, false }, { 0, false }, { 0, false }, { 0, false },
-	{ 0, false }, { 0, false }, { 0, false }, { 0, false },
-	{ 0, false }, { 0, false }, { 0, false }, { 0, false },
-	{ 0, false }, { 0, false }, { 0, false }, { 0, false }
-};
-uint8_t ppu_pixel_fifo_occupancy = 0;
-bool ppu_fetcher_first_scanline_steps = false;
+void ppu_fetcher_reset()
+{
+	ppu_fetcher_sprite_active = false;
+	ppu_fetcher_internal_clock = 0;
+	ppu_fetcher_internal_x_pos = 0;
+	ppu_fetcher_window_pixels = false;
+	ppu_fetcher_window_line_counter = 0;
+	ppu_fetcher_tile_no = 0;
+	memset(ppu_fetcher_tile_data, 0, sizeof(ppu_fetcher_tile_data));
+	memset(ppu_pixel_fifo, 0, sizeof(ppu_pixel_fifo));
+	ppu_pixel_fifo_occupancy = 0;
+	ppu_pixel_fifo_cursor = 0;
+}
 
 void ppu_fetcher_tick()
 {
@@ -300,7 +413,7 @@ void ppu_fetcher_tick()
 			}
 		}
 	}
-	if (ppu_fetcher_internal_clock == 6) // Step 4: Push to pixel FIFO
+	if (ppu_fetcher_internal_clock >= 6) // Step 4: Push to pixel FIFO
 	{
 		if (ppu_fetcher_sprite_active)
 		{
@@ -352,8 +465,6 @@ void ppu_fetcher_tick()
 	}
 }
 
-int16_t ppu_shifter_pixel_x = 0;
-
 void ppu_shifter_tick()
 {
 	if (ppu_fetcher_sprite_active)
@@ -366,6 +477,67 @@ void ppu_shifter_tick()
 	}
 	if (LCDC_SPRITE_ENABLE && ppu_oam_buffer_count > 0)
 	{
-		
+		const uint8_t* oam_sprite_data = memory + OBJECT_ATTRIBUTE_ADDRESS;
+		for (uint8_t i = 0; i < 10; i++)
+		{
+			if (ppu_oam_buffer[i].drawn) continue;
+			const object_attribute_data* sprite = (object_attribute_data*)(oam_sprite_data + ppu_oam_buffer[i].oam_id);
+			if (sprite->pos_x <= ppu_shifter_pixel_x + 8 &&
+				sprite->pos_x > ppu_shifter_pixel_x)
+			{
+				ppu_oam_sprite_fetcher_index = i;
+				ppu_fetcher_internal_clock = 0; // reset fetcher step
+				ppu_fetcher_sprite_active = true;
+				return;
+			}
+		}		 
+	}
+	if (ppu_discard_pixels > 0 && !ppu_fetcher_window_pixels) // SCX Handling
+	{
+		ppu_discard_pixels--;
+		ppu_pixel_fifo_occupancy--;
+		ppu_pixel_fifo_cursor++;
+		return;
+	}
+	if (ppu_shifter_pixel_x >= 0) // First 8 pixels are always off-screen and discarded
+	{
+		const uint8_t pixel_value = ppu_pixel_fifo[ppu_pixel_fifo_cursor].color;
+		const uint16_t screen_index = (ppu_lcd_registers->ly * 160) + ppu_shifter_pixel_x;
+		if (ppu_pixel_fifo[ppu_pixel_fifo_cursor].from_sprite)
+		{
+			frame_pixels[screen_index] = pixel_value;
+		}
+		else
+		{
+			const uint8_t paletted_pixel_value_bg = background_palette[pixel_value];
+			frame_pixels[screen_index] = paletted_pixel_value_bg;
+		}
+	}
+
+	ppu_shifter_pixel_x++;
+	ppu_pixel_fifo_occupancy--;
+	ppu_pixel_fifo_cursor = (ppu_pixel_fifo_cursor + 1) % 16;
+	if (LCDC_WINDOW_ENABLE &&
+		ppu_lcd_registers->wy == ppu_lcd_registers->ly &&
+		ppu_shifter_pixel_x >= ppu_lcd_registers->wx - 7 &&
+		!ppu_fetcher_window_pixels)
+	{
+		ppu_fetcher_reset();
+		ppu_fetcher_window_pixels = true;
+	}
+
+	if (ppu_shifter_pixel_x == 160) // reached H-Blank
+	{
+		ppu_shifter_pixel_x = -8;
+		ppu_pixel_fifo_cursor = 0;
+		ppu_pixel_fifo_occupancy = 0;
+		ppu_fetcher_internal_x_pos = 0;
+		ppu_fetcher_internal_clock = 0;
+		ppu_fetcher_first_scanline_steps = true;
+		if (ppu_fetcher_window_pixels)
+		{
+			ppu_fetcher_window_line_counter++;
+		}
+		ppu_set_lcd_mode(LCDS_MODE_0_H_BLANK);
 	}
 }

@@ -36,10 +36,14 @@ add_executable(gb-emu-cpp
   src/debug_log.h
   src/emulator_core.cpp
   src/emulator_core.h
+  src/gfx.cpp
+  src/gfx.h
   src/interrupts.cpp
   src/interrupts.h
   src/memory_bus.cpp
   src/memory_bus.h
+  src/ppu.cpp
+  src/ppu.h
   src/timer.cpp
   src/timer.h
 )

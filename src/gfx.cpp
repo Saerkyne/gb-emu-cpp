@@ -41,7 +41,7 @@ void gfx_clear(gfx_context* ctx, SDL_Color color)
 void gfx_putpixel(gfx_context* ctx, unsigned int x, unsigned int y, SDL_Color color)
 {
 	SDL_SetRenderDrawColor(ctx->renderer, color.r, color.g, color.b, color.a);
-	SDL_RenderDrawPoint(ctx->renderer, x, y);
+	SDL_RenderPoint(ctx->renderer, x, y);
 }
 
 void gfx_update(gfx_context* ctx)

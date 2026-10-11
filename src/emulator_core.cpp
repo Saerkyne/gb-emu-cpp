@@ -4,6 +4,7 @@
 #include "interrupts.h"
 #include "ppu.h"
 #include "timer.h"
+#include "memory_bus.h"
 
 gfx_context* gfx_debug_ctx = nullptr;
 gfx_context* gfx_render_ctx = nullptr;
@@ -13,9 +14,11 @@ bool core_quit_requested = false; // Flag to indicate if the emulator core shoul
 
 void core_init_gfx_contexts();
 
-int core_init() {
+int core_init()
+{
 
-	if (!cart_open_file()) {
+	if (!cart_open_file()) 
+	{
 		return -1;
 	}
 
@@ -23,30 +26,43 @@ int core_init() {
 
 	core_init_gfx_contexts();
 
+	ppu_init();
+	timer_init();
+
 	return 0;
 }
 
-void core_run() {
+void core_run() 
+{
+	memset(memory, 0, MEMORY_SIZE);
 	cpu_reset();
+	ppu_reset();
 
-	while (!core_quit_requested) {
+	while (!core_quit_requested) 
+	{
 		cpu_tick();
 	}
 }
 
-void core_shutdown() {
+void core_shutdown() 
+{
 	
 }
 
-void core_advance_cpu_clocks(uint8_t clocks) {
+void core_advance_cpu_clocks(uint8_t clocks) 
+{
 	timer_advance_clocks(clocks);
+	ppu_advance_clocks(clocks);
 	
 	core_clock_counter += clocks;
 
-	if (interrupt_enable_ime_delay > 0) {
-		for (uint8_t c = 0; c < clocks; c++) {
+	if (interrupt_enable_ime_delay > 0) 
+	{
+		for (uint8_t c = 0; c < clocks; c++) 
+		{
 			interrupt_enable_ime_delay--;
-			if (interrupt_enable_ime_delay == 0) {
+			if (interrupt_enable_ime_delay == 0) 
+			{
 				interrupt_master_enable = true;
 				break;
 			}

@@ -10,7 +10,7 @@ const uint8_t LCDS_MODE_1_V_BLANK = 1;
 const uint8_t LCDS_MODE_2_OAM_SEARCH = 2;
 const uint8_t LCDS_MODE_3_DRAWING = 3;
 
-const uint16_t OAM_ATTRIBUTE_ADDRESS = 0xFE00;
+const uint16_t OBJECT_ATTRIBUTE_ADDRESS = 0xFE00;
 
 struct lcd_registers {
 	uint8_t control;
@@ -43,6 +43,8 @@ struct pixel_fifo_data {
 	uint8_t color;
 	bool from_sprite;
 };
+
+extern lcd_registers* ppu_lcd_registers;
 
 // LCD Control Flags
 #define LCDC_ENABLE_LCD CHECK_BIT(ppu_lcd_registers->control, 7)
