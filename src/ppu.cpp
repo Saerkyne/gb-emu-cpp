@@ -143,6 +143,8 @@ void ppu_advance_clocks(const uint8_t clocks)
 					render_debug();
 					ppu_set_lcd_mode(LCDS_MODE_2_OAM_SEARCH);
 					ppu_first_frame_after_lcd_enable = false;
+
+					core_on_frame();
 				}
 				ppu_check_ly_compare();
 				continue;
@@ -258,6 +260,13 @@ const SDL_Color ppu_gb_colors[4] = {
 	{ 40, 44, 4, 255 }      
 };
 
+const SDL_Color ppu_gb_colors_grey[4] = {
+	{ 200, 200, 200, 255 },
+	{ 145, 145, 145, 255 },
+	{ 82, 82, 82, 255 },
+	{ 44, 44, 44, 255 }
+};
+
 
 void render_frame()
 {
@@ -296,9 +305,25 @@ void render_frame()
 	memset(frame_pixels, 0, LCD_PIXELS_WIDTH * LCD_PIXELS_HEIGHT);
 }
 
+void render_debug_vram(void* pixels, int pitch);
+void render_debug_background(void* pixels, int pitch);
+
 void render_debug()
 {
+	void* pixels = nullptr;
+	int pitch = 0;
 
+	int results = SDL_LockTexture(gfx_debug_ctx->texture, NULL, &pixels, &pitch);
+	results = SDL_RenderClear(gfx_debug_ctx->renderer);
+
+	render_debug_vram(pixels, pitch);
+	render_debug_background(pixels, pitch);
+
+	SDL_UnlockTexture(gfx_debug_ctx->texture);
+	SDL_FRect rect = { 0, 0, 512, 512 };
+	SDL_RenderTexture(gfx_debug_ctx->renderer, gfx_debug_ctx->texture, &rect, &rect);
+
+	SDL_RenderPresent(gfx_debug_ctx->renderer);
 }
 
 void extract_palette(uint16_t address, uint8_t* palette)
@@ -539,5 +564,89 @@ void ppu_shifter_tick()
 			ppu_fetcher_window_line_counter++;
 		}
 		ppu_set_lcd_mode(LCDS_MODE_0_H_BLANK);
+	}
+}
+
+void render_debug_vram(void* pixels, int pitch)
+{
+	const uint8_t* tile_data = memory + 0x8000;
+	for (uint16_t tile_id = 0; tile_id < 384; tile_id++)
+	{
+		const uint16_t tile_x = (tile_id % 16);
+		const uint16_t tile_y = (tile_id / 16);
+		const uint16_t tile_data_offset = tile_id * 16;
+		for (uint8_t row = 0; row < 8; row++)
+		{
+			const uint8_t low_byte = tile_data[tile_data_offset + (row * 2)];
+			const uint8_t high_byte = tile_data[tile_data_offset + (row * 2) + 1];
+			for (uint8_t row = 0; row < 8; row++)
+			{
+				const uint32_t screen_y = (tile_y * 8) + row;
+				const uint16_t pixel_address = (row * 2) + tile_data_offset;
+				const uint8_t* pixel_data = tile_data + pixel_address;
+				ppu_pixel_buffer[0] = ((pixel_data[0] & 0b10000000) >> 7) | ((pixel_data[1] & 0b10000000) >> 6);
+				ppu_pixel_buffer[1] = ((pixel_data[0] & 0b01000000) >> 6) | ((pixel_data[1] & 0b01000000) >> 5);
+				ppu_pixel_buffer[2] = ((pixel_data[0] & 0b00100000) >> 5) | ((pixel_data[1] & 0b00100000) >> 4);
+				ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
+				ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
+				ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
+				ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b00000010);
+				ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b00000001) << 1);
+
+				for (uint8_t column = 0; column < 8; column++)
+				{
+					const uint32_t screen_x = (tile_x * 8) + column + 256;
+					const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
+					const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
+					uint8_t* base = ((uint8_t*)pixels) + pixel_address;
+					base[0] = color.a;
+					base[1] = color.b;
+					base[2] = color.g;
+					base[3] = color.r;
+				}
+			}
+		}
+	}
+}
+
+void render_debug_background(void* pixels, int pitch)
+{
+	const uint8_t* tile_data = memory + (LCDC_TILE_DATA_SELECT ? 0x8000 : 0x9000);
+	const uint8_t* tile_map_data = memory + (LCDC_BG_TILE_MAP_SELECT ? 0x9C00 : 0x9800);
+	for (uint8_t tile_y = 0; tile_y < 32; tile_y++)
+	{
+		for (uint8_t tile_x = 0; tile_x < 32; tile_x++)
+		{
+			const uint8_t tile_index_u = tile_map_data[(tile_y * 32) + tile_x];
+			const int8_t tile_index_s = (int8_t)tile_index_u;
+			const int32_t tile_index = LCDC_TILE_DATA_SELECT ? tile_index_u : tile_index_s;
+			const int32_t tile_data_offset = tile_index * 16;
+			for (uint8_t row = 0; row < 8; row++)
+			{
+				const uint32_t screen_y = (tile_y * 8) + row;
+				const int32_t pixel_address = tile_data_offset + (row * 2);
+				const uint8_t* pixel_data = tile_data + pixel_address;
+				ppu_pixel_buffer[0] = ((pixel_data[0] & 0b10000000) >> 7) | ((pixel_data[1] & 0b10000000) >> 6);
+				ppu_pixel_buffer[1] = ((pixel_data[0] & 0b01000000) >> 6) | ((pixel_data[1] & 0b01000000) >> 5);
+				ppu_pixel_buffer[2] = ((pixel_data[0] & 0b00100000) >> 5) | ((pixel_data[1] & 0b00100000) >> 4);
+				ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
+				ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
+				ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
+				ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b00000010);
+				ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b00000001) << 1);
+
+				for (uint8_t column = 0; column < 8; column++)
+				{
+					const uint32_t screen_x = (tile_x * 8) + column + 256;
+					const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
+					const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
+					uint8_t* base = ((uint8_t*)pixels) + pixel_address;
+					base[0] = color.a;
+					base[1] = color.b;
+					base[2] = color.g;
+					base[3] = color.r;
+				}
+			}
+		}
 	}
 }

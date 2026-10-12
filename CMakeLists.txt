@@ -40,6 +40,8 @@ add_executable(gb-emu-cpp
   src/gfx.h
   src/interrupts.cpp
   src/interrupts.h
+  src/joypad.cpp
+  src/joypad.h
   src/memory_bus.cpp
   src/memory_bus.h
   src/ppu.cpp
