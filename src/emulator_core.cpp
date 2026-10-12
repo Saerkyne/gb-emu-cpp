@@ -61,6 +61,7 @@ void core_run()
 
 void core_shutdown() 
 {
+	cart_save_battery_data();
 	gfx_destroy(gfx_render_ctx);
 	gfx_destroy(gfx_debug_ctx);
 
@@ -133,9 +134,8 @@ void core_advance_cpu_clocks(uint8_t clocks)
 void core_init_gfx_contexts()
 {
 	const SDL_Color COLOR_BLACK = { 0, 0, 0, 0 };
-	const int DEBUG_TEXTURE_SIZE = 512;
 
-	gfx_debug_ctx = gfx_init(DEBUG_TEXTURE_SIZE, DEBUG_TEXTURE_SIZE, "Debug");
+	gfx_debug_ctx = gfx_init(512, 512, "Debug");
 	gfx_clear(gfx_debug_ctx, COLOR_BLACK);
 	gfx_update(gfx_debug_ctx);
 
