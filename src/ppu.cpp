@@ -39,6 +39,37 @@ bool ppu_fetcher_first_scanline_steps = false;
 int16_t ppu_shifter_pixel_x = 0;
 uint8_t ppu_discard_pixels = 0;
 
+const SDL_Color ppu_lcd_color_lit = { 223, 230, 179, 255 };
+const SDL_Color ppu_gb_colors[4] = {
+	{ 185, 200, 90, 255 },
+	{ 131, 145, 0, 255 },
+	{ 74, 82, 4, 255 },
+	{ 40, 44, 4, 255 }
+};
+const SDL_Color ppu_gb_colors_grey[4] = {
+	{ 200, 200, 200, 255 },
+	{ 145, 145, 145, 255 },
+	{ 82, 82, 82, 255 },
+	{ 44, 44, 44, 255 }
+};
+const SDL_Color ppu_gb_colors_red[4] = {
+	{ 200, 90, 90, 255 },
+	{ 145, 80, 0, 255 },
+	{ 82, 40, 0, 255 },
+	{ 44, 0, 0, 255 },
+};
+const SDL_Color ppu_gb_colors_blue[4] = {
+	{ 90, 90, 200, 255 },
+	{ 0, 80, 145, 255 },
+	{ 0, 40, 82, 255 },
+	{ 0, 0, 44, 255 },
+};
+
+uint16_t ppu_clocks_spent_in_mode0[154] = { 0 };
+uint16_t ppu_clocks_spent_in_mode1[154] = { 0 };
+uint16_t ppu_clocks_spent_in_mode2[154] = { 0 };
+uint16_t ppu_clocks_spent_in_mode3[154] = { 0 };
+
 void ppu_oam_search_tick();
 void ppu_fetcher_tick();
 void ppu_shifter_tick();
@@ -84,6 +115,7 @@ void ppu_advance_clocks(const uint8_t clocks)
 			{
 				ppu_set_lcd_mode(LCDS_MODE_3_DRAWING);
 				ppu_discard_pixels = ppu_lcd_registers->scx % 8;
+				ppu_clocks_spent_in_mode2[ppu_lcd_registers->ly] = ppu_scanline_dot;
 			}
 		}
 		else if (ppu_mode == LCDS_MODE_3_DRAWING)
@@ -92,6 +124,7 @@ void ppu_advance_clocks(const uint8_t clocks)
 			ppu_shifter_tick();
 			if (LCDS_PPU_MODE != LCDS_MODE_3_DRAWING)
 			{
+				ppu_clocks_spent_in_mode3[ppu_lcd_registers->ly] = ppu_scanline_dot;
 				continue;
 			}
 		}
@@ -113,6 +146,7 @@ void ppu_advance_clocks(const uint8_t clocks)
 			}
 			else if (ppu_scanline_dot == 455)
 			{
+				ppu_clocks_spent_in_mode0[ppu_lcd_registers->ly] = ppu_scanline_dot;
 				ppu_scanline_dot = 0;
 				ppu_lcd_registers->ly++;
 				if (ppu_lcd_registers->ly == 144)
@@ -133,6 +167,7 @@ void ppu_advance_clocks(const uint8_t clocks)
 		{
 			if (ppu_scanline_dot == 455)
 			{
+				ppu_clocks_spent_in_mode1[ppu_lcd_registers->ly] = ppu_scanline_dot;
 				ppu_scanline_dot = 0;
 				ppu_lcd_registers->ly++;
 				ppu_check_ly_compare();
@@ -252,22 +287,6 @@ void ppu_on_palette_write(const uint16_t addr)
 	if (addr == 0xFF49) extract_palette(addr, background_palette);
 }
 
-const SDL_Color ppu_lcd_color_lit = { 223, 230, 179, 255 };
-const SDL_Color ppu_gb_colors[4] = {
-	{ 185, 200, 90, 255 }, 
-	{ 131, 145, 0, 255 },
-	{ 74, 82, 4, 255 },   
-	{ 40, 44, 4, 255 }      
-};
-
-const SDL_Color ppu_gb_colors_grey[4] = {
-	{ 200, 200, 200, 255 },
-	{ 145, 145, 145, 255 },
-	{ 82, 82, 82, 255 },
-	{ 44, 44, 44, 255 }
-};
-
-
 void render_frame()
 {
 	void* pixels = NULL;
@@ -307,6 +326,10 @@ void render_frame()
 
 void render_debug_vram(void* pixels, int pitch);
 void render_debug_background(void* pixels, int pitch);
+void render_debug_sprites(void* pixels, int pitch);
+void render_debug_window(void* pixels, int pitch);
+void render_debug_viewport(void* pixels, int pitch);
+void render_debug_timing(void* pixels);
 
 void render_debug()
 {
@@ -318,6 +341,10 @@ void render_debug()
 
 	render_debug_vram(pixels, pitch);
 	render_debug_background(pixels, pitch);
+	render_debug_sprites(pixels, pitch);
+	render_debug_window(pixels, pitch);
+	render_debug_viewport(pixels, pitch);
+	render_debug_timing(pixels);
 
 	SDL_UnlockTexture(gfx_debug_ctx->texture);
 	SDL_FRect rect = { 0, 0, 512, 512 };
@@ -572,38 +599,33 @@ void render_debug_vram(void* pixels, int pitch)
 	const uint8_t* tile_data = memory + 0x8000;
 	for (uint16_t tile_id = 0; tile_id < 384; tile_id++)
 	{
-		const uint16_t tile_x = (tile_id % 16);
-		const uint16_t tile_y = (tile_id / 16);
+		const uint16_t tile_x = tile_id % 16;
+		const uint16_t tile_y = tile_id / 16;
 		const uint16_t tile_data_offset = tile_id * 16;
 		for (uint8_t row = 0; row < 8; row++)
 		{
-			const uint8_t low_byte = tile_data[tile_data_offset + (row * 2)];
-			const uint8_t high_byte = tile_data[tile_data_offset + (row * 2) + 1];
-			for (uint8_t row = 0; row < 8; row++)
-			{
-				const uint32_t screen_y = (tile_y * 8) + row;
-				const uint16_t pixel_address = (row * 2) + tile_data_offset;
-				const uint8_t* pixel_data = tile_data + pixel_address;
-				ppu_pixel_buffer[0] = ((pixel_data[0] & 0b10000000) >> 7) | ((pixel_data[1] & 0b10000000) >> 6);
-				ppu_pixel_buffer[1] = ((pixel_data[0] & 0b01000000) >> 6) | ((pixel_data[1] & 0b01000000) >> 5);
-				ppu_pixel_buffer[2] = ((pixel_data[0] & 0b00100000) >> 5) | ((pixel_data[1] & 0b00100000) >> 4);
-				ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
-				ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
-				ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
-				ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b00000010);
-				ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b00000001) << 1);
+			const uint32_t screen_y = (tile_y * 8) + row;
+			const uint16_t pixel_address = (row * 2) + tile_data_offset;
+			const uint8_t* pixel_data = tile_data + pixel_address;
+			ppu_pixel_buffer[0] = ((pixel_data[0] & 0b10000000) >> 7) | ((pixel_data[1] & 0b10000000) >> 6);
+			ppu_pixel_buffer[1] = ((pixel_data[0] & 0b01000000) >> 6) | ((pixel_data[1] & 0b01000000) >> 5);
+			ppu_pixel_buffer[2] = ((pixel_data[0] & 0b00100000) >> 5) | ((pixel_data[1] & 0b00100000) >> 4);
+			ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
+			ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
+			ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
+			ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b000000010);
+			ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b000000001) << 1);
 
-				for (uint8_t column = 0; column < 8; column++)
-				{
-					const uint32_t screen_x = (tile_x * 8) + column + 256;
-					const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
-					const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
-					uint8_t* base = ((uint8_t*)pixels) + pixel_address;
-					base[0] = color.a;
-					base[1] = color.b;
-					base[2] = color.g;
-					base[3] = color.r;
-				}
+			for (uint8_t column = 0; column < 8; column++)
+			{
+				const uint32_t screen_x = (tile_x * 8) + column + 256;
+				const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
+				const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
+				uint8_t* base = ((uint8_t*)pixels) + pixel_address;
+				base[0] = color.a;
+				base[1] = color.b;
+				base[2] = color.g;
+				base[3] = color.r;
 			}
 		}
 	}
@@ -632,12 +654,11 @@ void render_debug_background(void* pixels, int pitch)
 				ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
 				ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
 				ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
-				ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b00000010);
-				ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b00000001) << 1);
-
+				ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b000000010);
+				ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b000000001) << 1);
 				for (uint8_t column = 0; column < 8; column++)
 				{
-					const uint32_t screen_x = (tile_x * 8) + column + 256;
+					const uint32_t screen_x = (tile_x * 8) + column;
 					const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
 					const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
 					uint8_t* base = ((uint8_t*)pixels) + pixel_address;
@@ -647,6 +668,245 @@ void render_debug_background(void* pixels, int pitch)
 					base[3] = color.r;
 				}
 			}
+		}
+	}
+}
+
+void render_debug_sprites(void* pixels, int pitch)
+{
+	const bool draw_sprite_positions_only = false;
+	if (draw_sprite_positions_only)
+	{
+		const bool double_height_sprites = CHECK_BIT(ppu_lcd_registers->control, 2);
+		const uint8_t sprite_height = double_height_sprites ? 16 : 8;
+		const uint8_t* oam_sprite_data = memory + OBJECT_ATTRIBUTE_ADDRESS;
+		const uint32_t scx = ppu_lcd_registers->scx;
+		const uint32_t scy = ppu_lcd_registers->scy;
+		for (uint8_t index = 0; index < 40; index++)
+		{
+			const uint8_t byte_index = index * 4;
+			const object_attribute_data* sprite = (object_attribute_data*)(oam_sprite_data + byte_index);
+			const bool off_screen = (sprite->pos_y < 8 || sprite->pos_y >= 160 || sprite->pos_x == 0 || sprite->pos_x >= 168);
+			if (off_screen)
+			{
+				continue;
+			}
+			const int16_t pos_y = (scy + sprite->pos_y - 16);
+			const int16_t pos_x = (scx + sprite->pos_x - 8);
+			for (uint8_t y = 0; y < sprite_height; y++)
+			{
+				for (uint8_t x = 0; x < 8; x++)
+				{
+					const uint8_t pixel_y = (pos_y + y);
+					const uint8_t pixel_x = (pos_x + x);
+
+					uint8_t* base = ((uint8_t*)pixels) + (4 * ((pixel_y * 512) + pixel_x));
+					base[1] = 0;
+					base[2] = 0;
+					base[3] = 255;
+				}
+			}
+		}
+	}
+	else
+	{
+		const uint8_t* tile_data = memory + 0x8000;
+		const uint8_t* oam_sprite_data = memory + OBJECT_ATTRIBUTE_ADDRESS;
+		const bool double_height_sprites = LCDC_SPRITE_SIZE;
+		const uint8_t sprite_height = double_height_sprites ? 16 : 8;
+		const uint32_t scx = ppu_lcd_registers->scx;
+		const uint32_t scy = ppu_lcd_registers->scy;
+		for (uint8_t index = 0; index < 40; index++)
+		{
+			const uint8_t byte_index = index * 4;
+			const object_attribute_data* sprite = (object_attribute_data*)(oam_sprite_data + byte_index);
+			const bool off_screen = (sprite->pos_y < 8 || sprite->pos_y >= 160 || sprite->pos_x == 0 || sprite->pos_x >= 168);
+			if (off_screen)
+			{
+				continue;
+			}
+			const bool sprite_flip_x = CHECK_BIT(sprite->flags, 5);
+			const bool sprite_flip_y = CHECK_BIT(sprite->flags, 6);
+			const uint16_t tile_data_offset = (uint16_t)sprite->tile_id * 16;
+			const uint8_t pos_y = scy + sprite->pos_y - 16;
+			const uint8_t pos_x = scx + sprite->pos_x - 8;
+			for (uint8_t column = 0; column < sprite_height; column++)
+			{
+				const uint16_t pixel_data_address = sprite_flip_y ? ((7 - column) * 2) + tile_data_offset : (column * 2) + tile_data_offset;
+				const uint8_t pixel_data[2] = { tile_data[pixel_data_address], tile_data[pixel_data_address + 1] };
+				ppu_pixel_buffer[0] = ((pixel_data[0] & 0b10000000) >> 7) | ((pixel_data[1] & 0b10000000) >> 6);
+				ppu_pixel_buffer[1] = ((pixel_data[0] & 0b01000000) >> 6) | ((pixel_data[1] & 0b01000000) >> 5);
+				ppu_pixel_buffer[2] = ((pixel_data[0] & 0b00100000) >> 5) | ((pixel_data[1] & 0b00100000) >> 4);
+				ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
+				ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
+				ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
+				ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b000000010);
+				ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b000000001) << 1);
+				const int32_t screen_y = pos_y + column;
+				for (uint8_t row = 0; row < 8; row++)
+				{
+					const int32_t screen_x = pos_x + row;
+					if (screen_x < 0 || screen_y < 0)
+					{
+						continue;
+					}
+					const SDL_Color& color = ppu_gb_colors_red[ppu_pixel_buffer[sprite_flip_x ? 7 - row : row]];
+					uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + screen_x));
+					base[0] = color.a;
+					base[1] = color.b;
+					base[2] = color.g;
+					base[3] = color.r;
+				}
+			}
+		}
+	}
+}
+
+void render_debug_window(void* pixels, int pitch)
+{
+	const bool draw_location_only = false;
+	if (!LCDC_WINDOW_ENABLE)
+	{
+		return;
+	}
+	const uint8_t wx = ppu_lcd_registers->wx;
+	const uint8_t wy = ppu_lcd_registers->wy;
+	if (wx >= 166 || wy > 143)
+	{
+		return;
+	}
+	if (draw_location_only)
+	{
+		const uint32_t scx = ppu_lcd_registers->scx;
+		const uint32_t scy = ppu_lcd_registers->scy;
+		for (uint32_t x = wx - 7; x < LCD_PIXELS_WIDTH; x++)
+		{
+			for (uint32_t y = wy; y < LCD_PIXELS_HEIGHT; y++)
+			{
+				const uint8_t xpos = scx + x;
+				const uint8_t ypos = scy + y;
+				uint8_t* base = ((uint8_t*)pixels) + (4 * ((ypos * 512) + xpos));
+				base[1] = 255;
+			}
+		}
+	}
+	else
+	{
+		const uint8_t* tile_map_data_window = memory + (LCDC_WINDOW_TILE_MAP_SELECT ? 0x9C00 : 0x9800);
+		const uint8_t* tile_data = memory + (LCDC_TILE_DATA_SELECT ? 0x8000 : 0x9000);
+		const uint32_t scx = ppu_lcd_registers->scx;
+		const uint32_t scy = ppu_lcd_registers->scy;
+		const uint8_t tiles_x = (LCD_PIXELS_WIDTH - (wx - 7)) / 8;
+		const uint8_t tiles_y = (LCD_PIXELS_HEIGHT - wy) / 8;
+		for (uint32_t tile_x = 0; tile_x < tiles_x; tile_x++)
+		{
+			for (uint32_t tile_y = 0; tile_y < tiles_y; tile_y++)
+			{
+				const uint8_t tile_index_u = tile_map_data_window[(tile_y * 32) + tile_x];
+				const int8_t tile_index_s = (int8_t)tile_index_u;
+				const int32_t tile_index = LCDC_TILE_DATA_SELECT ? tile_index_u : tile_index_s;
+				const int32_t tile_data_offset = tile_index * 16;
+				for (uint8_t row = 0; row < 8; row++)
+				{
+					const int32_t pixel_address = tile_data_offset + (row * 2);
+					const uint8_t* pixel_data = tile_data + pixel_address;
+					ppu_pixel_buffer[0] = ((pixel_data[0] & 0b10000000) >> 7) | ((pixel_data[1] & 0b10000000) >> 6);
+					ppu_pixel_buffer[1] = ((pixel_data[0] & 0b01000000) >> 6) | ((pixel_data[1] & 0b01000000) >> 5);
+					ppu_pixel_buffer[2] = ((pixel_data[0] & 0b00100000) >> 5) | ((pixel_data[1] & 0b00100000) >> 4);
+					ppu_pixel_buffer[3] = ((pixel_data[0] & 0b00010000) >> 4) | ((pixel_data[1] & 0b00010000) >> 3);
+					ppu_pixel_buffer[4] = ((pixel_data[0] & 0b00001000) >> 3) | ((pixel_data[1] & 0b00001000) >> 2);
+					ppu_pixel_buffer[5] = ((pixel_data[0] & 0b00000100) >> 2) | ((pixel_data[1] & 0b00000100) >> 1);
+					ppu_pixel_buffer[6] = ((pixel_data[0] & 0b00000010) >> 1) | (pixel_data[1] & 0b000000010);
+					ppu_pixel_buffer[7] = (pixel_data[0] & 0b00000001) | ((pixel_data[1] & 0b000000001) << 1);
+					const uint8_t screen_y = scy + wy + (tile_y * 8) + row;
+					for (uint8_t column = 0; column < 8; column++)
+					{
+						const uint8_t screen_x = scx + wx - 7 + (tile_x * 8) + column;
+						const SDL_Color& color = ppu_gb_colors_blue[ppu_pixel_buffer[column]];
+						uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + screen_x));
+						base[0] = color.a;
+						base[1] = color.b;
+						base[2] = color.g;
+						base[3] = color.r;
+					}
+				}
+			}
+		}
+	}
+}
+
+void render_debug_viewport(void* pixels, int pitch)
+{
+	const uint8_t scx = ppu_lcd_registers->scx;
+	const uint8_t scy = ppu_lcd_registers->scy;
+	for (uint32_t x = 0; x < LCD_PIXELS_WIDTH; x++)
+	{
+		const uint8_t wrap_x = scx + x;
+		const uint8_t wrap_y = scy + 144;
+		uint8_t* base = ((uint8_t*)pixels) + (4 * ((scy * 512) + wrap_x));
+		base[3] = 255;
+		base = ((uint8_t*)pixels) + (4 * ((wrap_y * 512) + wrap_x));
+		base[3] = 255;
+	}
+	for (uint32_t y = 0; y < LCD_PIXELS_HEIGHT; y++)
+	{
+		const uint8_t wrap_x = scx + 160;
+		const uint8_t wrap_y = scy + y;
+		uint8_t* base = ((uint8_t*)pixels) + (4 * ((wrap_y * 512) + scx));
+		base[3] = 255;
+		base = ((uint8_t*)pixels) + (4 * ((wrap_y * 512) + wrap_x));
+		base[3] = 255;
+	}
+}
+
+void render_debug_timing(void* pixels)
+{
+	for (uint8_t row = 0; row < 154; row++)
+	{
+		const uint16_t screen_y = row + 256;
+		uint16_t start = 0;
+		uint16_t end = ppu_clocks_spent_in_mode2[row];
+		for (uint16_t column = start; column < end; column++)
+		{
+			const SDL_Color color = { 255, 255, 0, 255 }; // OAM Search = Yellow
+			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			base[0] = color.a;
+			base[1] = color.b;
+			base[2] = color.g;
+			base[3] = color.r;
+		}
+		start = ppu_clocks_spent_in_mode2[row];
+		end = ppu_clocks_spent_in_mode3[row];
+		for (uint16_t column = start; column < end; column++)
+		{
+			const SDL_Color color = { 0, 255, 0, 255 }; // Draw = Green
+			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			base[0] = color.a;
+			base[1] = color.b;
+			base[2] = color.g;
+			base[3] = color.r;
+		}
+		start = ppu_clocks_spent_in_mode3[row];
+		end = ppu_clocks_spent_in_mode0[row];
+		for (uint16_t column = start; column < end; column++)
+		{
+			const SDL_Color color = { 128, 128, 128, 255 }; // H-Blank = Grey
+			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			base[0] = color.a;
+			base[1] = color.b;
+			base[2] = color.g;
+			base[3] = color.r;
+		}
+		start = ppu_clocks_spent_in_mode0[row];
+		end = ppu_clocks_spent_in_mode1[row];
+		for (uint16_t column = start; column < end; column++)
+		{
+			const SDL_Color color = { 0, 255, 255, 255 }; // V-Blank = Teal
+			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			base[0] = color.a;
+			base[1] = color.b;
+			base[2] = color.g;
+			base[3] = color.r;
 		}
 	}
 }
