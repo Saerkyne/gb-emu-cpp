@@ -38,6 +38,19 @@ uint8_t memory_bus_read(const uint16_t addr)
 			const uint32_t offset = ROM_BANK_SIZE * (rom_bank - 1);
 			return cartridge_data[offset + addr];
 		}
+		else if (cart_info.type == CART_TYPE::MBC3)
+		{
+			uint8_t rom_bank = rom_bank_number;
+			if (rom_bank == 0x00)
+			{
+				rom_bank = 0x01; // Bank 0 is not accessible, default to bank 1
+			}
+			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
+			uint8_t rom_bank_mask = (1 << (cartridge_header->rom_size + 1)) - 1; // Mask the rom bank number based on the ROM size
+			rom_bank = rom_bank & rom_bank_mask;
+			const uint32_t offset = ROM_BANK_SIZE * (rom_bank - 1);
+			return cartridge_data[offset + addr];
+		}
 		return cartridge_data[addr];
 	}
 
@@ -62,6 +75,10 @@ uint8_t memory_bus_read(const uint16_t addr)
 			const uint16_t bank_offset = ram_bank_number * 0x2000; // 8k per RAM bank
 			const uint16_t eram_address = (addr - 0xA000) + bank_offset;
 			return eram[eram_address];
+		}
+		else if (cart_info.type == CART_TYPE::MBC3)
+		{
+
 		}
 	}
 
@@ -160,6 +177,33 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		if (addr >= 0x6000 && addr <= 0x7FFF) 
 		{
 			rom_ram_mode_select = value & 1; // This is a 1-bit register
+		}
+	}
+
+	if (cart_info.type == CART_TYPE::MBC3)
+	{
+		if (addr >= 0x0000 && addr <= 0x1FFF) // RAM and Timer Enable
+		{
+			ram_enabled = (value & 0x0F) == 0x0A;
+		}
+
+		if (addr >= 0x2000 && addr <= 0x3FFF) // ROM Bank Number (7 bits)
+		{
+			rom_bank_number = value & 0b01111111;
+			if (rom_bank_number == 0)
+			{
+				rom_bank_number = 1; // Bank 0 is not accessible, default to bank 1
+			}
+		}
+
+		if (addr >= 0x4000 && addr <= 0x5FFF) // RAM Bank Number (2 bits) or RTC Register Select (4 bits)
+		{
+			ram_bank_number = value;
+		}
+
+		if (addr >= 0x6000 && addr <= 0x7FFF) // Latch Clock Data
+		{
+			// Handle RTC latch here if needed
 		}
 	}
 
