@@ -90,19 +90,19 @@ void cpu_dump_registers(const gb_cpu_registers& registers) {
 	const uint8_t sp_low = (registers.sp & 0xFF);
 
 	if (instruction.operand_length == 0) {
-		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-			registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		//debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+		//	registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 	else if (instruction.operand_length == 1) {
 		const uint8_t operand = memory_bus_read(registers.pc + 1);
-		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-			registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		//debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			//registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 	else if (instruction.operand_length == 2) {
 		const uint8_t op_low = memory_bus_read(registers.pc + 1);
 		const uint8_t op_high = memory_bus_read(registers.pc + 2);
-		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-			registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		//debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+		//	registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 }
 
