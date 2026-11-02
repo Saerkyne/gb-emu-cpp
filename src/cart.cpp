@@ -74,7 +74,25 @@ bool cart_load(const char* filename) {
 		file.seekg(0, std::ios::beg); // Move to the beginning of the file
 		file.read((char*)cartridge_data, MAX_CART_SIZE); // Read the file into the cartridge_data buffer
 		file.close();
-		printf("RM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
+		if (size > MAX_CART_SIZE) 
+		{
+			printf("Warning: ROM size exceeds maximum cartridge size. Only the first %d bytes would be loaded.\n", MAX_CART_SIZE);
+			return false;
+		}
+		if (cart_type_data[cartridge_header->cartridge_type].type == CART_TYPE::MBC3)
+		{
+			if (cartridge_header->ram_size >= 0x04 && cartridge_header->ram_size <= 0x07)
+			{
+				printf("ROM %s is using MBC3 with invalid ERAM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->ram_size);
+				return false;
+			}
+			if (cartridge_header->rom_size >= 0x07 && cartridge_header->rom_size <= 0x08)
+			{
+				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
+				return false;
+			}
+		}
+		printf("ROM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
 		return true;
 	}
 	printf("Failed to load ROM %s\n", filename);
