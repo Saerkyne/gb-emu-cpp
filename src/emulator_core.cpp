@@ -19,7 +19,7 @@ std::chrono::steady_clock::time_point core_time_frame_begin;
 
 void core_init_gfx_contexts();
 void core_on_key_press(SDL_Scancode sym, bool down);
-void core_sleep_until(std::chrono::high_resolution_clock::time_point targetTime);
+void core_sleep_until(std::chrono::steady_clock::time_point targetTime);
 
 int core_init()
 {
@@ -51,7 +51,7 @@ void core_run()
 	cpu_reset();
 	ppu_reset();
 
-	core_time_frame_begin = std::chrono::high_resolution_clock::now();
+	core_time_frame_begin = std::chrono::steady_clock::now();
 
 	while (!core_quit_requested) 
 	{
@@ -100,15 +100,15 @@ void core_on_frame()
 		}
 	}
 
-	auto time_frame_end = std::chrono::high_resolution_clock::now();
+	auto time_frame_end = std::chrono::steady_clock::now();
 	auto time_elapsed = time_frame_end - core_time_frame_begin;
 	auto sleep_time = std::chrono::nanoseconds((CPU_FRAME_TIME_NS) - time_elapsed.count());
 	if (sleep_time.count() > 0)
 	{
-		std::chrono::high_resolution_clock::time_point end_of_sleep = time_frame_end + sleep_time;
+		std::chrono::steady_clock::time_point end_of_sleep = time_frame_end + sleep_time;
 		core_sleep_until(end_of_sleep);
 	}
-	core_time_frame_begin = std::chrono::high_resolution_clock::now();
+	core_time_frame_begin = std::chrono::steady_clock::now();
 }
 
 void core_advance_cpu_clocks(uint8_t clocks) 
@@ -179,9 +179,9 @@ void core_on_key_press(SDL_Scancode sym, bool down)
 	}
 }
 
-void core_sleep_until(std::chrono::high_resolution_clock::time_point targetTime)
+void core_sleep_until(std::chrono::steady_clock::time_point targetTime)
 {
-	auto now = std::chrono::high_resolution_clock::now();
+	auto now = std::chrono::steady_clock::now();
 	auto buffer = std::chrono::milliseconds(2);
 
 	if (targetTime - now > buffer)
@@ -189,7 +189,7 @@ void core_sleep_until(std::chrono::high_resolution_clock::time_point targetTime)
 		std::this_thread::sleep_until(targetTime - buffer);
 	}
 
-	while (std::chrono::high_resolution_clock::now() < targetTime)
+	while (std::chrono::steady_clock::now() < targetTime)
 	{
 		std::this_thread::yield();
 	}
