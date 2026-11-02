@@ -190,6 +190,7 @@ bool cart_save_to_file(const char* filename, uint32_t save_size, bool cart_suppo
 	if (existing_save)
 	{
 		std::string backup_filename = std::string(filename) + ".bak";
+		existing_save.close();
 		if (std::rename(filename, backup_filename.c_str()) != 0) {
 			printf("Warning: Failed to create backup of existing save file %s.\n", filename);
 		} else {
