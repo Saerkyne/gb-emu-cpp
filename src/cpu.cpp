@@ -10,7 +10,7 @@
 gb_cpu_registers cpu_registers; // Global instance of CPU registers
 uint8_t cpu_current_op_code = 0; // Current operation code being executed
 uint32_t cpu_instruction_counter = 0; // Counter for the number of instructions executed
-void* cpu_current_instruction_execute = nullptr; // Pointer to the current instruction's execute function
+void(*cpu_current_instruction_execute)() = nullptr; // Pointer to the current instruction's execute function
 uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop instruction
 bool cpu_halt_bug = false;
 bool cpu_debug_instructions = true;
@@ -61,10 +61,10 @@ void cpu_fetch() {
 		core_advance_cpu_clocks(4);
 		const uint8_t cpu_current_op_code_cb = memory_bus_read(cpu_registers.pc++);
 		const gb_cpu_pre_cb_instruction& cb_instruction = cb_instructions[cpu_current_op_code_cb];
-		cpu_current_instruction_execute = cb_instruction.execute;
+		cpu_current_instruction_execute = cb_instruction.cpu_execute_op;
 	} else {
 		const gb_cpu_instruction& instruction = instructions[cpu_current_op_code];
-		cpu_current_instruction_execute = instruction.execute;
+		cpu_current_instruction_execute = instruction.cpu_execute_op;
 	}
 }
 
