@@ -24,6 +24,20 @@ struct cart_header_struct {
 	uint8_t global_checksum_low; // Low byte of the 16-bit (high-endian) global checksum, used to verify the entire ROM
 };
 
+struct cart_ram_info {
+	uint8_t code;
+	uint32_t bank_count;
+};
+
+const cart_ram_info cart_ram_size[] = {
+	 { 0x00, 0 }, // 0x00
+	 { 0x01, 0 }, // 0x01
+	 { 0x02, 1 }, // 0x02
+	 { 0x03, 4 }, // 0x03
+	 { 0x04, 16 }, // 0x04
+	 { 0x05, 8 } // 0x05
+};
+
 extern cart_header_struct* cartridge_header; // Pointer to the cartridge header structure
 
 bool cart_open_file();

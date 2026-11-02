@@ -12,7 +12,7 @@ uint8_t memory[MEMORY_SIZE];
 uint8_t eram[ERAM_SIZE];
 
 uint16_t rom_bank_number = 0;
-uint16_t ram_bank_number = 0;
+uint16_t ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 bool ram_enabled = false;
 bool rom_ram_mode_select = false;
 
@@ -72,13 +72,37 @@ uint8_t memory_bus_read(const uint16_t addr)
 		} 
 		else if (cart_info.type == CART_TYPE::MBC1) 
 		{
-			const uint16_t bank_offset = ram_bank_number * 0x2000; // 8k per RAM bank
-			const uint16_t eram_address = (addr - 0xA000) + bank_offset;
+			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+			const uint32_t bank_offset = ram_bank_number * RAM_BANK_SIZE;
+			const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 			return eram[eram_address];
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
 		{
-
+			if (!ram_enabled)
+			{
+				return 0xFF; // RAM is disabled, return 0xFF
+			}
+			if (cartridge_header->ram_size < sizeof(cart_ram_size)) // Check that the ram_bank_number is within the bounds of the cart_ram_size array
+			{
+				if (cartridge_header->ram_size == 0x00)
+				{
+					return 0xFF; // No RAM available, return 0xFF
+				}
+				else if (cartridge_header->ram_size == 0x01)
+				{
+					return 0xFF; // Unused RAM size code, return 0xFF
+				}
+				else
+				{
+					const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+					uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
+					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
+					return eram[eram_address];
+				}
+			}
+			return 0xFF; // Default case
 		}
 	}
 
