@@ -98,7 +98,7 @@ bool cart_load(const char* filename) {
 				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
 				return false;
 			}
-			cart_check_save(); // Check if a save file exists for this ROM and load it into ERAM if it does
+			cart_check_save(filename); // Check if a save file exists for this ROM and load it into ERAM if it does
 		}
 
 		printf("ROM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
@@ -108,7 +108,7 @@ bool cart_load(const char* filename) {
 	return false;
 }
 
-bool cart_check_save() {
+bool cart_check_save(const char* rom_filename_buffer) {
 	if (cart_type_data[cartridge_header->cartridge_type].has_battery && cart_type_data[cartridge_header->cartridge_type].has_ram) // Cart needs to have a battery and RAM to have a save file
 	{
 		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is valid and greater than 0
@@ -122,12 +122,13 @@ bool cart_check_save() {
 			} else {
 				strncat(save_filename_buffer, ".sav", MAX_PATH - strlen(save_filename_buffer) - 1);
 			}
-			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
+			if (cart_open_save_file(save_filename_buffer, save_size)) // Check if a save exists. 
 			{
 				// logic to load save file into ERAM
 				memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
+				return true;
 			}
-			printf("Save file doesn't exist.");
+			printf("Save file doesn't exist.\n");
 			return false;
 		}
 		printf("ROM %s has a bank count of 0, which means no save data.\n", rom_filename_buffer);
@@ -140,7 +141,7 @@ bool cart_check_save() {
 	}
 }
 
-bool cart_open_save_file(const char* filename) {
+bool cart_open_save_file(const char* filename, uint32_t save_size) {
 	std::streampos size;
 	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
 	if (file.is_open()) {
@@ -148,7 +149,7 @@ bool cart_open_save_file(const char* filename) {
 		file.seekg(0, std::ios::beg); // Move to the beginning of the file
 		file.read((char*)save_data, ERAM_SIZE); // Read the file into the save_data buffer
 		file.close();
-		if (size > ERAM_SIZE)
+		if (size > save_size)
 		{
 			printf("Warning: Save file size exceeds maximum ERAM size. Only the first %d bytes would be loaded.\n", ERAM_SIZE);
 			return false;
@@ -158,10 +159,7 @@ bool cart_open_save_file(const char* filename) {
 	}
 	else
 	{
-		printf("No save found.");
+		printf("No save found.\n");
 		return false;
 	}
-
-	printf("Failed to load save file %s\n", filename);
-	return false;
 }
