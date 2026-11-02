@@ -81,12 +81,12 @@ bool cart_load(const char* filename) {
 		}
 		if (cart_type_data[cartridge_header->cartridge_type].type == CART_TYPE::MBC3)
 		{
-			if (cartridge_header->ram_size >= 0x04 && cartridge_header->ram_size <= 0x07)
+			if (!(cartridge_header->ram_size >= 0x00 && cartridge_header->ram_size <= 0x03))
 			{
 				printf("ROM %s is using MBC3 with invalid ERAM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->ram_size);
 				return false;
 			}
-			if (cartridge_header->rom_size >= 0x07 && cartridge_header->rom_size <= 0x08)
+			if (!(cartridge_header->rom_size >= 0x00 && cartridge_header->rom_size <= 0x06))
 			{
 				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
 				return false;
