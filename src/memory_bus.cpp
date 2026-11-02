@@ -249,10 +249,38 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		} 
 		else if (cart_info.type == CART_TYPE::MBC1) 
 		{
-			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per ROM bank
+			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
 			const uint32_t offset = RAM_BANK_SIZE * ram_bank_number;
-			const uint16_t eram_address = offset + (addr - 0xA000);
+			const uint32_t eram_address = offset + (addr - 0xA000);
 			eram[eram_address] = value;
+		}
+		else if (cart_info.type == CART_TYPE::MBC3)
+		{
+			if (!ram_enabled)
+			{
+				 // RAM is disabled, ignore the write
+				 return;
+			}
+			if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
+			{
+				if (cartridge_header->ram_size == 0x00)
+				{
+					// No RAM available, ignore the write
+				}
+				else if (cartridge_header->ram_size == 0x01)
+				{
+					// Unused RAM size code, ignore the write
+				}
+				else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07)
+				{
+					const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+					uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
+					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
+					eram[eram_address] = value;
+				}
+			}
+			return;
 		}
 	}
 
