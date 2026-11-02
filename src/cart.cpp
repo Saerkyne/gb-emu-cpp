@@ -9,6 +9,7 @@ char runtime_path_buffer[MAX_PATH]; // Buffer to hold the runtime path
 char rom_filename_buffer[MAX_PATH]; // Buffer to hold the ROM filename
 char save_filename_buffer[MAX_PATH]; // Buffer to hold the save filename
 bool cart_supports_saves = false; // Flag to indicate if the currently loaded cartridge supports saves
+uint32_t save_size; // Size of the save file, calculated based on the cartridge RAM size
 uint8_t save_data[ERAM_SIZE]; // Buffer to hold the save data
 uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 bool cartridge_loaded = false; // Flag to indicate if a cartridge is loaded
@@ -126,7 +127,7 @@ bool cart_check_save(const char* rom_filename) {
 		}
 		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is greater than 0
 		{
-			const uint32_t save_size = cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024; // Calculate the expected save file size based on the RAM size
+			save_size = cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024; // Calculate the expected save file size based on the RAM size
 			strncpy(save_filename_buffer, rom_filename, MAX_PATH); // Copy the ROM filename to the save_filename buffer
 			// Replace the extension with .sav
 			char* dot = strrchr(save_filename_buffer, '.');
@@ -180,9 +181,9 @@ bool cart_open_save_file(const char* filename, uint32_t save_size) {
 	}
 }
 
-bool cart_save_to_file(const char* filename, uint32_t save_size, bool cart_supports_saves) {
-	if (!cart_supports_saves) {
-		printf("Cartridge does not support saves. Cannot save to file %s.\n", filename);
+bool cart_save_to_file(const char* filename, uint32_t save_size, bool save_support) {
+	if (!save_support) {
+		printf("Cartridge does not support saves.\n");
 		return false;
 	}
 	// Check for existing save, if so, rename to .bak
@@ -201,6 +202,12 @@ bool cart_save_to_file(const char* filename, uint32_t save_size, bool cart_suppo
 	if (file.is_open()) {
 		file.write((const char*)eram, save_size);
 		file.close();
+		std::ifstream verify_file(filename, std::ios::in | std::ios::binary);
+		if (verify_file.seekg(0, std::ios::end).tellg() != save_size) {
+			printf("Warning: Save file %s size does not match expected size (%u bytes).\n", filename, save_size);
+			return false;
+		}
+		verify_file.close();
 		printf("Save file %s saved, size: %u bytes\n", filename, save_size);
 		return true;
 	} else {
