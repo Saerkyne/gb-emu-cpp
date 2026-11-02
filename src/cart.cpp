@@ -99,7 +99,10 @@ bool cart_load(const char* filename) {
 				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
 				return false;
 			}
-			cart_supports_saves = true;
+			if (cart_type_data[cartridge_header->cartridge_type].has_battery && cart_type_data[cartridge_header->cartridge_type].has_ram)
+			{
+				cart_supports_saves = true;
+			}
 		}
 
 		if (cart_supports_saves)
@@ -173,6 +176,34 @@ bool cart_open_save_file(const char* filename, uint32_t save_size) {
 	else
 	{
 		printf("No save found.\n");
+		return false;
+	}
+}
+
+bool cart_save_to_file(const char* filename, uint32_t save_size, bool cart_supports_saves) {
+	if (!cart_supports_saves) {
+		printf("Cartridge does not support saves. Cannot save to file %s.\n", filename);
+		return false;
+	}
+	// Check for existing save, if so, rename to .bak
+	std::ifstream existing_save(filename);
+	if (existing_save)
+	{
+		std::string backup_filename = std::string(filename) + ".bak";
+		if (std::rename(filename, backup_filename.c_str()) != 0) {
+			printf("Warning: Failed to create backup of existing save file %s.\n", filename);
+		} else {
+			printf("Existing save file %s renamed to %s.\n", filename, backup_filename.c_str());
+		}
+	}
+	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	if (file.is_open()) {
+		file.write((const char*)eram, save_size);
+		file.close();
+		printf("Save file %s saved, size: %u bytes\n", filename, save_size);
+		return true;
+	} else {
+		printf("Failed to open save file %s for writing.\n", filename);
 		return false;
 	}
 }

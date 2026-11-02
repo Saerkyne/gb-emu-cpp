@@ -1,11 +1,13 @@
 #pragma once
 
 #include <stdint.h>
+#include <Windows.h>
 
 const int MAX_CART_SIZE = 1024 * 2048; // 2MB
 extern uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 extern bool cartridge_loaded; // Flag to indicate if a cartridge is loaded
 extern bool cart_supports_saves; // Flag to indicate if the currently loaded cartridge supports saves
+extern char save_filename_buffer[MAX_PATH]; // Buffer exposed for saving to file on shutdown
 
 struct cart_header_struct {
 	uint8_t entry_point[4]; // Entry point for the cartridge
@@ -46,3 +48,4 @@ void cart_print_info();
 bool cart_load(const char* filename);
 bool cart_check_save(const char* rom_filename);
 bool cart_open_save_file(const char* filename, uint32_t save_size);
+bool cart_save_to_file(const char* filename, uint32_t save_size, bool cart_supports_saves);
