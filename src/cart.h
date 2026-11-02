@@ -5,6 +5,7 @@
 const int MAX_CART_SIZE = 1024 * 2048; // 2MB
 extern uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 extern bool cartridge_loaded; // Flag to indicate if a cartridge is loaded
+extern bool cart_supports_saves; // Flag to indicate if the currently loaded cartridge supports saves
 
 struct cart_header_struct {
 	uint8_t entry_point[4]; // Entry point for the cartridge
