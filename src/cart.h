@@ -43,3 +43,5 @@ extern cart_header_struct* cartridge_header; // Pointer to the cartridge header 
 bool cart_open_file();
 void cart_print_info();
 bool cart_load(const char* filename);
+bool cart_check_save();
+bool cart_open_save_file(const char* filename);

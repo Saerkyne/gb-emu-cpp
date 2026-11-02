@@ -1,10 +1,14 @@
 #include "cart.h"
 #include "cart_type.h"
+#include "memory_bus.h"
 #include <iostream>
 #include <fstream>
 #include <Windows.h>
 
 char runtime_path_buffer[MAX_PATH]; // Buffer to hold the runtime path
+char rom_filename_buffer[MAX_PATH]; // Buffer to hold the ROM filename
+char save_filename_buffer[MAX_PATH]; // Buffer to hold the save filename
+uint8_t save_data[ERAM_SIZE]; // Buffer to hold the save data
 uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 bool cartridge_loaded = false; // Flag to indicate if a cartridge is loaded
 cart_header_struct* cartridge_header = (cart_header_struct*)(cartridge_data + 0x100); // Pointer to the cartridge header structure, which is located at offset 0x100 in the cartridge data
@@ -39,6 +43,7 @@ bool cart_open_file() {
 
 	if (GetOpenFileNameA(&ofn)) {
 		if (cart_load(filename)) {
+			strncpy(rom_filename_buffer, filename, MAX_PATH); // Store the ROM filename
 			return true;
 		}
 		return false;
@@ -93,10 +98,70 @@ bool cart_load(const char* filename) {
 				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
 				return false;
 			}
+			cart_check_save(); // Check if a save file exists for this ROM and load it into ERAM if it does
 		}
+
 		printf("ROM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
 		return true;
 	}
 	printf("Failed to load ROM %s\n", filename);
+	return false;
+}
+
+bool cart_check_save() {
+	if (cart_type_data[cartridge_header->cartridge_type].has_battery && cart_type_data[cartridge_header->cartridge_type].has_ram) // Cart needs to have a battery and RAM to have a save file
+	{
+		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is valid and greater than 0
+		{
+			const uint32_t save_size = cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024; // Calculate the expected save file size based on the RAM size
+			strncpy(save_filename_buffer, rom_filename_buffer, MAX_PATH); // Copy the ROM filename to the save_filename buffer
+			// Replace the extension with .sav
+			char* dot = strrchr(save_filename_buffer, '.');
+			if (dot) {
+				strcpy(dot, ".sav");
+			} else {
+				strncat(save_filename_buffer, ".sav", MAX_PATH - strlen(save_filename_buffer) - 1);
+			}
+			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
+			{
+				// logic to load save file into ERAM
+				memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
+			}
+			printf("Save file doesn't exist.");
+			return false;
+		}
+		printf("ROM %s has a bank count of 0, which means no save data.\n", rom_filename_buffer);
+		return false;
+	}
+	else 
+	{
+		printf("ROM %s does not have a battery and RAM, so no save data is available.\n", rom_filename_buffer);
+		return false;
+	}
+}
+
+bool cart_open_save_file(const char* filename) {
+	std::streampos size;
+	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
+	if (file.is_open()) {
+		size = file.tellg(); // Get the size of the file
+		file.seekg(0, std::ios::beg); // Move to the beginning of the file
+		file.read((char*)save_data, ERAM_SIZE); // Read the file into the save_data buffer
+		file.close();
+		if (size > ERAM_SIZE)
+		{
+			printf("Warning: Save file size exceeds maximum ERAM size. Only the first %d bytes would be loaded.\n", ERAM_SIZE);
+			return false;
+		}
+		printf("Save file %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
+		return true;
+	}
+	else
+	{
+		printf("No save found.");
+		return false;
+	}
+
+	printf("Failed to load save file %s\n", filename);
 	return false;
 }
