@@ -136,7 +136,7 @@ bool cart_check_save(const char* rom_filename) {
 			} else {
 				strncat(save_filename_buffer, ".sav", MAX_PATH - strlen(save_filename_buffer) - 1);
 			}
-			if (cart_open_save_file(save_filename_buffer, save_size)) // Check if a save exists. 
+			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
 			{
 				// logic to load save file into ERAM
 				memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
@@ -154,7 +154,7 @@ bool cart_check_save(const char* rom_filename) {
 	}
 }
 
-bool cart_open_save_file(const char* filename, uint32_t save_size) {
+bool cart_open_save_file(const char* filename) {
 	std::streampos size;
 	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
 	if (file.is_open()) {
@@ -181,8 +181,8 @@ bool cart_open_save_file(const char* filename, uint32_t save_size) {
 	}
 }
 
-bool cart_save_to_file(const char* filename, uint32_t save_size, bool save_support) {
-	if (!save_support) {
+bool cart_save_to_file(const char* filename) {
+	if (!cart_supports_saves) {
 		printf("Cartridge does not support saves.\n");
 		return false;
 	}
@@ -192,9 +192,26 @@ bool cart_save_to_file(const char* filename, uint32_t save_size, bool save_suppo
 	{
 		std::string backup_filename = std::string(filename) + ".bak";
 		existing_save.close();
-		if (std::rename(filename, backup_filename.c_str()) != 0) {
+		// Check for existing backup and remove it if it exists
+		std::ifstream existing_backup(backup_filename);
+		if (existing_backup)
+		{
+			existing_backup.close();
+			if (std::remove(backup_filename.c_str()) != 0)
+			{
+				printf("Warning: Failed to remove existing backup save file %s.\n", backup_filename.c_str());
+			}
+			else
+			{
+				printf("Existing backup save file %s removed.\n", backup_filename.c_str());
+			}
+		}
+		if (std::rename(filename, backup_filename.c_str()) != 0)
+		{
 			printf("Warning: Failed to create backup of existing save file %s.\n", filename);
-		} else {
+		} 
+		else 
+		{
 			printf("Existing save file %s renamed to %s.\n", filename, backup_filename.c_str());
 		}
 	}

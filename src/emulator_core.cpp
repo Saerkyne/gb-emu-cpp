@@ -64,7 +64,7 @@ void core_shutdown()
 	gfx_destroy(gfx_render_ctx);
 	gfx_destroy(gfx_debug_ctx);
 	
-	cart_save_to_file(save_filename_buffer, cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024, cart_supports_saves);
+	cart_save_to_file(save_filename_buffer);
 
 	SDL_Quit();
 
