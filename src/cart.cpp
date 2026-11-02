@@ -38,8 +38,10 @@ bool cart_open_file() {
 	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST; // Flags for the dialog
 
 	if (GetOpenFileNameA(&ofn)) {
-		cart_load(filename);
-		return true;
+		if (cart_load(filename)) {
+			return true;
+		}
+		return false;
 	}
 	return false;
 }
