@@ -75,6 +75,7 @@ void cart_print_info() {
 
 // Loads a Game Boy ROM from the specified filename into the cartridge_data buffer. Returns true if successful, false otherwise.
 bool cart_load(const char* filename) {
+	bool cart_supports_saves = false;
 	std::streampos size;
 	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
 	if (file.is_open()) {
@@ -123,6 +124,10 @@ bool cart_check_save(const char* rom_filename) {
 		}
 		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is greater than 0
 		{
+			if (cartridge_header->ram_size > sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) {
+				printf("ROM %s has an invalid RAM size (0x%02X). This is not supported. Please check the ROM.\n", rom_filename, cartridge_header->ram_size);
+				return false;
+			}
 			const uint32_t save_size = cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024; // Calculate the expected save file size based on the RAM size
 			strncpy(save_filename_buffer, rom_filename, MAX_PATH); // Copy the ROM filename to the save_filename buffer
 			// Replace the extension with .sav
