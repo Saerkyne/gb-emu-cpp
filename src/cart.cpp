@@ -108,13 +108,13 @@ bool cart_load(const char* filename) {
 	return false;
 }
 
-bool cart_check_save(const char* rom_filename_buffer) {
+bool cart_check_save(const char* rom_filename) {
 	if (cart_type_data[cartridge_header->cartridge_type].has_battery && cart_type_data[cartridge_header->cartridge_type].has_ram) // Cart needs to have a battery and RAM to have a save file
 	{
 		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is valid and greater than 0
 		{
 			const uint32_t save_size = cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024; // Calculate the expected save file size based on the RAM size
-			strncpy(save_filename_buffer, rom_filename_buffer, MAX_PATH); // Copy the ROM filename to the save_filename buffer
+			strncpy(save_filename_buffer, rom_filename, MAX_PATH); // Copy the ROM filename to the save_filename buffer
 			// Replace the extension with .sav
 			char* dot = strrchr(save_filename_buffer, '.');
 			if (dot) {
@@ -128,10 +128,9 @@ bool cart_check_save(const char* rom_filename_buffer) {
 				memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
 				return true;
 			}
-			printf("Save file doesn't exist.\n");
 			return false;
 		}
-		printf("ROM %s has a bank count of 0, which means no save data.\n", rom_filename_buffer);
+		printf("ROM %s has a bank count of 0, which means no save data.\n", rom_filename);
 		return false;
 	}
 	else 
@@ -151,8 +150,12 @@ bool cart_open_save_file(const char* filename, uint32_t save_size) {
 		file.close();
 		if (size > save_size)
 		{
-			printf("Warning: Save file size exceeds maximum ERAM size. Only the first %d bytes would be loaded.\n", ERAM_SIZE);
+			printf("Warning: Save file size exceeds expected save size (%u bytes). Nothing will be loaded.\n", save_size);
 			return false;
+		}
+		if (size < save_size)
+		{
+			printf("Warning: Save file size is smaller than expected save size (%u bytes).\n", save_size);
 		}
 		printf("Save file %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
 		return true;
