@@ -36,7 +36,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
 			uint8_t rom_bank = rom_bank_number > 0 ? rom_bank_number : 1;
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
-			const uint32_t rom_address = bank_offset + (addr - ROM_BANK_SIZE);
+			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
@@ -47,9 +47,9 @@ uint8_t memory_bus_read(const uint16_t addr)
 				rom_bank = 0x01; // Bank 0 is not accessible, default to bank 1
 			}
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
-			uint8_t rom_bank = rom_bank & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
+			rom_bank = rom_bank & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
-			const uint32_t rom_address = bank_offset + (addr - ROM_BANK_SIZE);
+			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
 		}
 		return cartridge_data[addr];
@@ -94,7 +94,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 				{
 					return 0xFF; // Unused RAM size code, return 0xFF
 				}
-				else if (ram_bank_number == 0x02 || ram_bank_number == 0x03)
+				else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07)
 				{
 					const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
 					uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
