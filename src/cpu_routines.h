@@ -374,3 +374,4 @@
 	memory_bus_write(cpu_registers.hl, temp | (1 << bitn));					\
 	core_advance_cpu_clocks(4);												\
 }
+
