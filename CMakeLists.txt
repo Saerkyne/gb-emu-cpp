@@ -46,6 +46,8 @@ add_executable(gb-emu-cpp
   src/memory_bus.h
   src/ppu.cpp
   src/ppu.h
+  src/rtc.cpp
+  src/rtc.h
   src/timer.cpp
   src/timer.h
 )
