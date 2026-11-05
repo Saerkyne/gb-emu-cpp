@@ -13,7 +13,7 @@ extern uint32_t rtc_subsecond_counter; // counts towards 4194304 ticks (1 second
 extern bool cart_has_rtc; // indicates if the cartridge has an RTC
 extern uint8_t rtc_previous_latch_write; // stores the previous value written to the latch register (0x6000-0x7FFF) to detect the latch command sequence
 
-void rtc_init(bool has_timer); // zeros out the RTC registers and sets up the initial state and sets the cart_has_rtc flag
+void rtc_init(); // zeros out the RTC registers and sets up the initial state and sets the cart_has_rtc flag
 void rtc_advance_clocks(const uint8_t cycles); // advances subsecond counter and calls rtc_tick when it fills
 void rtc_register_write(const uint16_t selector, const uint8_t value); // handles writes to the RTC registers
 uint8_t rtc_register_read(const uint16_t selector); // handles reads from the RTC registers

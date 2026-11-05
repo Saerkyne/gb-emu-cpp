@@ -130,10 +130,8 @@ void rtc_advance_clocks(const uint8_t cycles) {
 	}
 }
 
-void rtc_init(bool has_timer) {
-	if (!has_timer) {
-		return; // If the cartridge doesn't have a timer, do nothing
-	}
+void rtc_init() {
+	
 	// Initialize the RTC registers and subsecond counter
 	live_rtc_registers.rtc_seconds = 0;
 	live_rtc_registers.rtc_minutes = 0;

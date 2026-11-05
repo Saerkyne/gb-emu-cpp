@@ -107,7 +107,7 @@ bool cart_load(const char* filename) {
 			}
 			if (cart_type_data[cartridge_header->cartridge_type].has_timer) // All carts with timers have batteries.
 			{
-				rtc_init(true);
+				rtc_init();
 			}
 		}
 
