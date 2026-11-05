@@ -142,17 +142,7 @@ void rtc_latch_write(const uint8_t value) {
 	rtc_previous_latch_write = value; // Update the previous latch write value
 }
 
-void rtc_halt() {
-	if (!cart_has_rtc) {
-		return; // If the cartridge doesn't have an RTC, do nothing
-	}
-	live_rtc_registers.rtc_days_high |= 0b01000000; // Set the halt bit in the days high register
-
-}
-
 void rtc_register_write(const uint16_t selector, const uint8_t value) {
-
-	rtc_halt(); // RTC needs to be halted before any writes to the RTC registers, as per the MBC3 specification
 
 	if (selector == 0x08) // RTC write live seconds register
 	{
