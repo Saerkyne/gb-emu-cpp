@@ -3,6 +3,7 @@
 #include "cpu.h"
 #include "interrupts.h"
 #include "ppu.h"
+#include "rtc.h"
 #include "timer.h"
 #include "memory_bus.h"
 #include "joypad.h"
@@ -115,6 +116,7 @@ void core_advance_cpu_clocks(uint8_t clocks)
 {
 	timer_advance_clocks(clocks);
 	ppu_advance_clocks(clocks);
+	rtc_advance_clocks(clocks);
 	
 	core_clock_counter += clocks;
 
