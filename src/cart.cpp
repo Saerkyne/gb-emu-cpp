@@ -1,6 +1,7 @@
 #include "cart.h"
 #include "cart_type.h"
 #include "memory_bus.h"
+#include "rtc.h"
 #include <iostream>
 #include <fstream>
 #include <Windows.h>
@@ -104,12 +105,19 @@ bool cart_load(const char* filename) {
 			{
 				cart_supports_saves = true;
 			}
+			if (cart_type_data[cartridge_header->cartridge_type].has_timer) // All carts with timers have batteries.
+			{
+				rtc_init(true);
+			}
 		}
 
 		if (cart_supports_saves)
 		{
 			cart_check_save(filename); // Check if a save file exists for this ROM and load it into ERAM if it does
 		}
+
+		
+
 
 		printf("ROM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
 		return true;

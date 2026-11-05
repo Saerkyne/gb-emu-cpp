@@ -110,3 +110,36 @@ void rtc_tick() {
 	
 	rtc_tick_seconds(); // Increment seconds, which will cascade to minutes, hours, and days as needed
 }
+
+void rtc_advance_clocks(const uint8_t cycles) {
+	if (!cart_has_rtc) 
+	{
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+
+	if (live_rtc_registers.rtc_days_high & 0b01000000) 
+	{ 
+		return; // If the RTC is halted, do not advance the RTC clock
+	}
+
+	rtc_subsecond_counter += cycles; // Increment the subsecond counter by the number of cycles
+	if (rtc_subsecond_counter >= 4194304) // Check if the subsecond counter has reached 1 second (4194304 cycles)
+	{
+		rtc_subsecond_counter = rtc_subsecond_counter - 4194304; // Reset the subsecond counter by subtracting 4194304
+		rtc_tick(); // Increment the RTC registers
+	}
+}
+
+void rtc_init(bool has_timer) {
+	if (!has_timer) {
+		return; // If the cartridge doesn't have a timer, do nothing
+	}
+	// Initialize the RTC registers and subsecond counter
+	live_rtc_registers.rtc_seconds = 0;
+	live_rtc_registers.rtc_minutes = 0;
+	live_rtc_registers.rtc_hours = 0;
+	live_rtc_registers.rtc_days_low = 0;
+	live_rtc_registers.rtc_days_high = 0;
+	rtc_subsecond_counter = 0;
+	cart_has_rtc = true;
+}
