@@ -142,7 +142,18 @@ void rtc_latch_write(const uint8_t value) {
 	rtc_previous_latch_write = value; // Update the previous latch write value
 }
 
+void rtc_halt() {
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+	live_rtc_registers.rtc_days_high |= 0b01000000; // Set the halt bit in the days high register
+
+}
+
 void rtc_register_write(const uint16_t selector, const uint8_t value) {
+
+	rtc_halt(); // RTC needs to be halted before any writes to the RTC registers, as per the MBC3 specification
+
 	if (selector == 0x08) // RTC write live seconds register
 	{
 		uint8_t masked_seconds = value & 0b00111111; // Mask the value to ensure it is within 0-63
@@ -168,10 +179,6 @@ void rtc_register_write(const uint16_t selector, const uint8_t value) {
 		uint8_t masked_days_high = value & 0b11000001; // Mask the value to ensure only bits 0, 6, and 7 are used
 		live_rtc_registers.rtc_days_high = masked_days_high; 
 	}
-	else
-	{
-		return; // Ignore the write if the selector is not a register selector for the RTC
-	}
 }
 
 uint8_t rtc_register_read(const uint16_t selector) {
@@ -195,7 +202,7 @@ uint8_t rtc_register_read(const uint16_t selector) {
 	{
 		return latch_rtc_registers.rtc_days_high;
 	}
-	return 0x00; // Return an invalid value if the selector does not match any RTC register
+	return 0xFF; // Return a default value if the selector does not match any RTC register
 }
 
 void rtc_init() {
