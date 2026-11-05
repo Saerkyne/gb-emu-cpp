@@ -85,6 +85,17 @@ uint8_t memory_bus_read(const uint16_t addr)
 			{
 				return 0xFF; // RAM/RTC is disabled, return 0xFF
 			}
+			if (ram_bank_number >= 0x08 && ram_bank_number <= 0x0C) // RTC register selector
+			{
+				if (!cart_info.has_timer)
+				{
+					return 0xFF; // no timer, return 0xFF
+				}
+				else
+				{
+					return rtc_register_read(ram_bank_number);
+				}
+			}
 			if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
 			{
 				if (cartridge_header->ram_size == 0x00)
@@ -102,17 +113,6 @@ uint8_t memory_bus_read(const uint16_t addr)
 					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
 					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 					return eram[eram_address];
-				}
-				else if (ram_bank_number >= 0x08 && ram_bank_number <= 0x0C) // RTC register selector
-				{
-					if (!cart_info.has_timer)
-					{
-						return 0xFF; // no timer, return 0xFF
-					}
-					else
-					{
-						return rtc_register_read(ram_bank_number);
-					}
 				}
 			}
 			return 0xFF; // Default case
@@ -273,6 +273,17 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 				 // RAM/RTC is disabled, ignore the write
 				 return;
 			}
+			if (ram_bank_number >= 0x08 && ram_bank_number <= 0x0C) // RTC register selector
+			{
+				if (!cart_info.has_timer)
+				{
+					return; // no timer, ignore the write
+				}
+				else
+				{
+					rtc_register_write(ram_bank_number, value);
+				}
+			}
 			if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
 			{
 				if (cartridge_header->ram_size == 0x00)
@@ -290,17 +301,6 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
 					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 					eram[eram_address] = value;
-				}
-				else if (ram_bank_number >= 0x08 && ram_bank_number <= 0x0C) // RTC register selector
-				{
-					if (!cart_info.has_timer)
-					{
-						return; // no timer, ignore the write
-					}
-					else
-					{
-						rtc_register_write(ram_bank_number, value);
-					}
 				}
 			}
 			return;
