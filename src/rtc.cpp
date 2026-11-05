@@ -130,14 +130,36 @@ void rtc_advance_clocks(const uint8_t cycles) {
 	}
 }
 
+void rtc_latch_write(const uint8_t value) {
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+
+	if (rtc_previous_latch_write == 0x00 && value == 0x01)
+	{
+		latch_rtc_registers = live_rtc_registers; // Latch the current RTC registers into the latch registers
+	}
+	rtc_previous_latch_write = value; // Update the previous latch write value
+}
+
 void rtc_init() {
 	
-	// Initialize the RTC registers and subsecond counter
+	// Initialize the live RTC registers
 	live_rtc_registers.rtc_seconds = 0;
 	live_rtc_registers.rtc_minutes = 0;
 	live_rtc_registers.rtc_hours = 0;
 	live_rtc_registers.rtc_days_low = 0;
 	live_rtc_registers.rtc_days_high = 0;
+
+	// Initialize the latched RTC registers
+	latch_rtc_registers.rtc_seconds = 0;
+	latch_rtc_registers.rtc_minutes = 0;
+	latch_rtc_registers.rtc_hours = 0;
+	latch_rtc_registers.rtc_days_low = 0;
+	latch_rtc_registers.rtc_days_high = 0;
+
+	// Initialize subsecond counter, previous latch value, and cart_has_rtc flag
 	rtc_subsecond_counter = 0;
+	rtc_previous_latch_write = 0xFF; // Set to an invalid value to ensure the first write is not treated as a latch command
 	cart_has_rtc = true;
 }

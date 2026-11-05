@@ -1,6 +1,7 @@
 #include "memory_bus.h"
 #include "cart.h"
 #include "cart_type.h"
+#include "rtc.h"
 #include "timer.h"
 #include "interrupts.h"
 #include "debug_log.h"
@@ -228,7 +229,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 		if (addr >= 0x6000 && addr <= 0x7FFF) // Latch Clock Data
 		{
-			// Handle RTC latch here if needed
+			rtc_latch_write(value);
 		}
 	}
 
