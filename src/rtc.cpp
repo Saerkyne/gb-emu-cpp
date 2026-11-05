@@ -11,7 +11,14 @@ void rtc_tick_days_high() {
 	uint8_t curr_days_high = live_rtc_registers.rtc_days_high; // read the current days high value
 	if (curr_days_high & 0b00000001) // Check if day counter bit 8 is set
 	{
-		live_rtc_registers.rtc_days_high = 0x80; // Set Day Counter Carry bit to 1, clear the day counter bit 8
+		if (curr_days_high & 0b10000000) // Check if Day Counter Carry bit is set
+		{
+			live_rtc_registers.rtc_days_high = curr_days_high ^ 0b00000001; // Clear day counter bit 8, carry flag is sticky until cleared intentionally
+		}
+		else
+		{
+			live_rtc_registers.rtc_days_high = curr_days_high ^ 0b10000001; // Clear day counter bit 8 but set the Day Counter Carry bit
+		}
 	}
 	else
 	{
@@ -101,11 +108,5 @@ void rtc_tick() {
 		return; // If the cartridge doesn't have an RTC, do nothing
 	}
 	
-	if (live_rtc_registers.rtc_seconds > 59) {
-		live_rtc_registers.rtc_seconds = 0;
-		rtc_tick_minutes();
-	}
-	else {
-		live_rtc_registers.rtc_seconds++;
-	}
+	rtc_tick_seconds(); // Increment seconds, which will cascade to minutes, hours, and days as needed
 }
