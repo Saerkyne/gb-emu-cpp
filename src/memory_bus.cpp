@@ -284,26 +284,29 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 					rtc_register_write(ram_bank_number, value);
 				}
 			}
-			if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
+			else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07) // Functions as a selector, not a RAM bank value
 			{
-				if (cartridge_header->ram_size == 0x00)
+				if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
 				{
-					// No RAM available, ignore the write
-				}
-				else if (cartridge_header->ram_size == 0x01)
-				{
-					// Unused RAM size code, ignore the write
-				}
-				else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07)
-				{
-					const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-					uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
-					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
-					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
-					eram[eram_address] = value;
+					if (cartridge_header->ram_size == 0x00)
+					{
+						// No RAM available, ignore the write
+					}
+					else if (cartridge_header->ram_size == 0x01)
+					{
+						// Unused RAM size code, ignore the write
+					}
+					else
+					{
+						const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+						uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+						const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
+						const uint32_t eram_address = (addr - 0xA000) + bank_offset;
+						eram[eram_address] = value;
+					}
 				}
 			}
-			return;
+			return; // Exit after handling MBC3 RAM/RTC write
 		}
 	}
 
