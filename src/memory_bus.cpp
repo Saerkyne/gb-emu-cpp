@@ -83,7 +83,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 		{
 			if (!ram_enabled)
 			{
-				return 0xFF; // RAM is disabled, return 0xFF
+				return 0xFF; // RAM/RTC is disabled, return 0xFF
 			}
 			if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
 			{
@@ -95,13 +95,24 @@ uint8_t memory_bus_read(const uint16_t addr)
 				{
 					return 0xFF; // Unused RAM size code, return 0xFF
 				}
-				else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07)
+				else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07) // Functions as a selector, not a RAM bank value
 				{
 					const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
 					uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
 					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
 					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 					return eram[eram_address];
+				}
+				else if (ram_bank_number >= 0x08 && ram_bank_number <= 0x0C) // RTC register selector
+				{
+					if (!cart_info.has_timer)
+					{
+						return 0xFF; // no timer, return 0xFF
+					}
+					else
+					{
+						return rtc_register_read(ram_bank_number);
+					}
 				}
 			}
 			return 0xFF; // Default case
@@ -259,7 +270,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		{
 			if (!ram_enabled)
 			{
-				 // RAM is disabled, ignore the write
+				 // RAM/RTC is disabled, ignore the write
 				 return;
 			}
 			if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
@@ -279,6 +290,17 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 					const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
 					const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 					eram[eram_address] = value;
+				}
+				else if (ram_bank_number >= 0x08 && ram_bank_number <= 0x0C) // RTC register selector
+				{
+					if (!cart_info.has_timer)
+					{
+						return; // no timer, ignore the write
+					}
+					else
+					{
+						rtc_register_write(ram_bank_number, value);
+					}
 				}
 			}
 			return;
