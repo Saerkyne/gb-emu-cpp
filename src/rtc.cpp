@@ -142,6 +142,62 @@ void rtc_latch_write(const uint8_t value) {
 	rtc_previous_latch_write = value; // Update the previous latch write value
 }
 
+void rtc_register_write(const uint16_t selector, const uint8_t value) {
+	if (selector == 0x08) // RTC write live seconds register
+	{
+		uint8_t masked_seconds = value & 0b00111111; // Mask the value to ensure it is within 0-63
+		live_rtc_registers.rtc_seconds = masked_seconds;
+		rtc_subsecond_counter = 0; // Reset the subsecond counter when seconds are written
+	}
+	if (selector == 0x09) // RTC write live minutes register
+	{
+		uint8_t masked_minutes = value & 0b00111111; // Mask the value to ensure it is within 0-63
+		live_rtc_registers.rtc_minutes = masked_minutes;
+	}
+	if (selector == 0x0A) // RTC write live hours register
+	{
+		uint8_t masked_hours = value & 0b00011111; // Mask the value to ensure it is within 0-31
+		live_rtc_registers.rtc_hours = masked_hours;
+	}
+	if (selector == 0x0B) // RTC write live days low register
+	{
+		live_rtc_registers.rtc_days_low = value; // No masking needed, as it is a full byte
+	}
+	if (selector == 0x0C) // RTC write live days high register
+	{
+		uint8_t masked_days_high = value & 0b11000001; // Mask the value to ensure only bits 0, 6, and 7 are used
+		live_rtc_registers.rtc_days_high = masked_days_high; 
+	}
+	else
+	{
+		return; // Ignore the write if the selector is not a register selector for the RTC
+	}
+}
+
+uint8_t rtc_register_read(const uint16_t selector) {
+	if (selector == 0x08)
+	{
+		return latch_rtc_registers.rtc_seconds;
+	}
+	if (selector == 0x09)
+	{
+		return latch_rtc_registers.rtc_minutes;
+	}
+	if (selector == 0x0A)
+	{
+		return latch_rtc_registers.rtc_hours;
+	}
+	if (selector == 0x0B)
+	{
+		return latch_rtc_registers.rtc_days_low;
+	}
+	if (selector == 0x0C)
+	{
+		return latch_rtc_registers.rtc_days_high;
+	}
+	return 0x00; // Return an invalid value if the selector does not match any RTC register
+}
+
 void rtc_init() {
 	
 	// Initialize the live RTC registers
