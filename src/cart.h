@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <Windows.h>
 
-const int MAX_CART_SIZE = 1024 * 2048; // 2MB
+const int MAX_CART_SIZE = 1024 * 1024 * 8; // 8MB
 extern uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 extern bool cartridge_loaded; // Flag to indicate if a cartridge is loaded
 extern bool cart_supports_saves; // Flag to indicate if the currently loaded cartridge supports saves
