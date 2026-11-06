@@ -91,6 +91,13 @@ bool cart_load(const char* filename) {
 			printf("Warning: ROM size exceeds maximum cartridge size. Only the first %d bytes would be loaded.\n", MAX_CART_SIZE);
 			return false;
 		}
+		if (cart_info.type == CART_TYPE::MBC1)
+		{
+			if (cart_info.has_battery && cart_info.has_ram)
+			{
+				cart_supports_saves = true;
+			}
+		}
 		if (cart_info.type == CART_TYPE::MBC3)
 		{
 			if (!(cartridge_header->ram_size >= 0x00 && cartridge_header->ram_size <= 0x03))

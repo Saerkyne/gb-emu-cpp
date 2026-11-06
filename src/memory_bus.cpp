@@ -13,7 +13,7 @@ uint8_t memory[MEMORY_SIZE];
 uint8_t eram[ERAM_SIZE];
 
 uint16_t rom_bank_number = 1; // Default to bank 1 for MBC1 and MBC3
-uint16_t mbc1_bank2 = 0; // Used for MBC1 when in ROM banking mode
+uint16_t mbc1_bank2 = 0; // Used for MBC1
 uint16_t ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 bool ram_enabled = false;
 bool rom_ram_mode_select = false;
@@ -98,6 +98,14 @@ uint8_t memory_bus_read(const uint16_t addr)
 			if (!ram_enabled)
 			{
 				return 0xFF; // RAM is disabled, return 0xFF
+			}
+			if (cartridge_header->ram_size == 0x00)
+			{
+				return 0xFF; // No RAM available, return 0xFF
+			}
+			else if (cartridge_header->ram_size == 0x01)
+			{
+				return 0xFF; // Unused RAM size code, return 0xFF
 			}
 			if (rom_ram_mode_select) // RAM banking mode
 			{
@@ -294,6 +302,15 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			if (!ram_enabled)
 			{
 				return; // RAM is disabled, ignore the write
+			}
+
+			if (cartridge_header->ram_size == 0x00)
+			{
+				return; // No RAM available, ignore the write
+			}
+			else if (cartridge_header->ram_size == 0x01)
+			{
+				return; // Unused RAM size code, ignore the write
 			}
 
 			if (rom_ram_mode_select)
