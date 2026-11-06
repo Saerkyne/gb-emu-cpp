@@ -9,11 +9,10 @@ struct rtc_clock_registers {
 	uint8_t rtc_days_high; // RTC days high register
 };
 
-extern uint8_t rtc_save_bytes[64]; // 64 bytes for RTC save data
+extern uint8_t rtc_save_bytes[48]; // 64 bytes for RTC save data
 extern uint32_t rtc_subsecond_counter; // counts towards 4194304 ticks (1 second) for the RTC
 extern bool cart_has_rtc; // indicates if the cartridge has an RTC
 extern uint8_t rtc_previous_latch_write; // stores the previous value written to the latch register (0x6000-0x7FFF) to detect the latch command sequence
-extern uint64_t utc_timestamp; // stores the UTC timestamp for the RTC
 
 void rtc_init(); // zeros out the RTC registers and sets up the initial state and sets the cart_has_rtc flag
 void rtc_advance_clocks(const uint8_t cycles); // advances subsecond counter and calls rtc_tick when it fills

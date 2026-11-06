@@ -1,10 +1,12 @@
 #include "rtc.h"
 #include <stdio.h>
+#include <string.h>
 
 rtc_clock_registers live_rtc_registers;
 rtc_clock_registers latch_rtc_registers;
 uint32_t rtc_subsecond_counter; // counts towards 4194304 ticks (1 second) for the RTC
 uint8_t rtc_previous_latch_write; // detects the state of the latch command sequence (0x00 -> 0x01 in 0x6000-0x7FFF)
+uint8_t rtc_save_bytes[48]; // 48 bytes for RTC save data
 
 bool  cart_has_rtc; // indicates if the cartridge has an RTC
 
@@ -197,45 +199,37 @@ uint8_t rtc_register_read(const uint16_t selector) {
 }
 
 uint64_t rtc_load_save_bytes(const uint64_t utc_timestamp, const uint8_t footer_length) {
+	
+	live_rtc_registers.rtc_seconds = (rtc_save_bytes[0]) & 0x3F;
+	live_rtc_registers.rtc_minutes = (rtc_save_bytes[4]) & 0x3F;
+	live_rtc_registers.rtc_hours = (rtc_save_bytes[8]) & 0x1F;
+	live_rtc_registers.rtc_days_low = (rtc_save_bytes[12]) & 0xFF;
+	live_rtc_registers.rtc_days_high = (rtc_save_bytes[16]) & 0xC1;
+	latch_rtc_registers.rtc_seconds = (rtc_save_bytes[20]) & 0x3F;
+	latch_rtc_registers.rtc_minutes = (rtc_save_bytes[24]) & 0x3F;
+	latch_rtc_registers.rtc_hours = (rtc_save_bytes[28]) & 0x1F;
+	latch_rtc_registers.rtc_days_low = (rtc_save_bytes[32]) & 0xFF;
+	latch_rtc_registers.rtc_days_high = (rtc_save_bytes[36]) & 0xC1;
+	
 	if (footer_length == 48)
 	{
-		live_rtc_registers.rtc_seconds = rtc_save_bytes[0];
-		live_rtc_registers.rtc_minutes = rtc_save_bytes[4];
-		live_rtc_registers.rtc_hours = rtc_save_bytes[8];
-		live_rtc_registers.rtc_days_low = rtc_save_bytes[12];
-		live_rtc_registers.rtc_days_high = rtc_save_bytes[16];
-		latch_rtc_registers.rtc_seconds = rtc_save_bytes[20];
-		latch_rtc_registers.rtc_minutes = rtc_save_bytes[24];
-		latch_rtc_registers.rtc_hours = rtc_save_bytes[28];
-		latch_rtc_registers.rtc_days_low = rtc_save_bytes[32];
-		latch_rtc_registers.rtc_days_high = rtc_save_bytes[36];
 		uint64_t loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24) | ((uint64_t)rtc_save_bytes[44] << 32) | ((uint64_t)rtc_save_bytes[45] << 40) | ((uint64_t)rtc_save_bytes[46] << 48) | ((uint64_t)rtc_save_bytes[47] << 56);
 		
 		return loaded_utc_timestamp;
 	}
 	else if (footer_length == 44)
 	{
-		live_rtc_registers.rtc_seconds = rtc_save_bytes[0];
-		live_rtc_registers.rtc_minutes = rtc_save_bytes[4];
-		live_rtc_registers.rtc_hours = rtc_save_bytes[8];
-		live_rtc_registers.rtc_days_low = rtc_save_bytes[12];
-		live_rtc_registers.rtc_days_high = rtc_save_bytes[16];
-		latch_rtc_registers.rtc_seconds = rtc_save_bytes[20];
-		latch_rtc_registers.rtc_minutes = rtc_save_bytes[24];
-		latch_rtc_registers.rtc_hours = rtc_save_bytes[28];
-		latch_rtc_registers.rtc_days_low = rtc_save_bytes[32];
-		latch_rtc_registers.rtc_days_high = rtc_save_bytes[36];
 		uint64_t  loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24);
 		return loaded_utc_timestamp;
 	}
 	else {
-		printf("Warning: RTC save footer length is not 48 or 44 bytes. RTC registers will not be loaded.\n");
+		printf("Warning: RTC save footer length is not 48 or 44 bytes. Registers loaded, but UTC timestamp will be incorrect.\n");
 		return utc_timestamp; // Return the original timestamp if the footer length is incorrect
 	}
 }
 
 void rtc_create_save_bytes(const uint64_t utc_timestamp) {
-	// Create a 64-bit value representing the current state of the RTC registers
+	// Create a 48-byte value representing the current state of the RTC registers
 	// only exists as a 48 or 44 byte value by convention added to the end of a .sav file
 	// Every value is little endian and 4 bytes long. Each register is only one byte, 
 	// so values are padded with 0x00 to fill the 4 bytes. The order of the registers is as follows:
@@ -244,7 +238,7 @@ void rtc_create_save_bytes(const uint64_t utc_timestamp) {
 	if (!cart_has_rtc) {
 		return; // If the cartridge doesn't have an RTC, do nothing
 	}
-	rtc_save_bytes[64] = { 0 }; // Initialize the save bytes array to zero
+	memset(rtc_save_bytes, 0, sizeof(rtc_save_bytes)); // Initialize the save bytes array to zero
 
 	rtc_save_bytes[0] = live_rtc_registers.rtc_seconds;
 	rtc_save_bytes[4] = live_rtc_registers.rtc_minutes;
@@ -259,7 +253,11 @@ void rtc_create_save_bytes(const uint64_t utc_timestamp) {
 	rtc_save_bytes[40] = utc_timestamp & 0xFF; // UTC timestamp low byte
 	rtc_save_bytes[41] = (utc_timestamp & 0xFF00) >> 8;
 	rtc_save_bytes[42] = (utc_timestamp & 0xFF0000) >> 16;
-	rtc_save_bytes[43] = (utc_timestamp & 0xFF000000) >> 24; // UTC timestamp high byte
+	rtc_save_bytes[43] = (utc_timestamp & 0xFF000000) >> 24; 
+	rtc_save_bytes[44] = (utc_timestamp & 0xFF00000000) >> 32;
+	rtc_save_bytes[45] = (utc_timestamp & 0xFF0000000000) >> 40;
+	rtc_save_bytes[46] = (utc_timestamp & 0xFF000000000000) >> 48;
+	rtc_save_bytes[47] = (utc_timestamp & 0xFF00000000000000) >> 56;
 }
 
 void rtc_init() {
