@@ -13,6 +13,27 @@
                 "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
                 "CMAKE_BUILD_TYPE": "Debug"
             }
+        },
+        {
+            "name": "Linux-GCC",
+            "displayName": "Linux GCC (Debug)",
+            "description": "Uses the system-default C and C++ compilers on Linux.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "Linux-GCC",
+            "displayName": "Linux GCC (Debug)",
+            "description": "Build with the system GCC toolchain on Linux.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
         }
     ]
 }
