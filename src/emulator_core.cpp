@@ -8,6 +8,8 @@
 #include "memory_bus.h"
 #include "joypad.h"
 #include <chrono>
+#include <cstdio>
+#include <cstring>
 #include <thread>
 
 const uint32_t CPU_FRAME_TIME_NS = 1.0 / 60.0 * 1000000000;
@@ -18,9 +20,15 @@ uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
 std::chrono::steady_clock::time_point core_time_frame_begin;
 
+static char core_requested_rom_path[CART_MAX_PATH]; // Path of the ROM waiting to be loaded
+static bool core_rom_load_pending = false; // Set by core_request_rom_load, cleared by core_handle_rom_request
+
 void core_init_gfx_contexts();
 void core_on_key_press(SDL_Scancode sym, bool down);
 void core_sleep_until(std::chrono::steady_clock::time_point targetTime);
+void core_poll_events();
+void core_handle_rom_request();
+void core_idle();
 
 int core_init()
 {
@@ -31,32 +39,31 @@ int core_init()
 		return -1;
 	}
 
-	if (!cart_open_file()) 
-	{
-		return -1;
-	}
-
-	cart_print_info();
-
 	core_init_gfx_contexts();
-
-	ppu_init();
-	timer_init();
 
 	return 0;
 }
 
 void core_run() 
 {
-	memset(memory, 0, MEMORY_SIZE);
-	cpu_reset();
-	ppu_reset();
-
 	core_time_frame_begin = std::chrono::steady_clock::now();
 
 	while (!core_quit_requested) 
 	{
-		cpu_tick();
+		// Between cpu_tick calls no instruction is half-finished, so we can safely poll events and handle ROM requests here
+		if (core_rom_load_pending) 
+		{
+			core_handle_rom_request();
+		}
+
+		if (cartridge_loaded) 
+		{
+			cpu_tick();
+		}
+		else 
+		{
+			core_idle();
+		}
 	}
 }
 
@@ -73,24 +80,7 @@ void core_shutdown()
 
 void core_on_frame()
 {
-	while (SDL_PollEvent(&gfx_render_ctx->event))
-	{
-		switch (gfx_render_ctx->event.type)
-		{
-		case SDL_EVENT_KEY_DOWN:
-			core_on_key_press(gfx_render_ctx->event.key.scancode, true);
-			break;
-		case SDL_EVENT_KEY_UP:
-			core_on_key_press(gfx_render_ctx->event.key.scancode, false);
-			break;
-		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-			core_quit_requested = true;
-			break;
-		case SDL_EVENT_QUIT:
-			core_quit_requested = true;
-			break;
-		}
-	}
+	core_poll_events();
 
 	if (gfx_debug_ctx->window)
 	{
@@ -110,6 +100,73 @@ void core_on_frame()
 		core_sleep_until(end_of_sleep);
 	}
 	core_time_frame_begin = std::chrono::steady_clock::now();
+}
+
+void core_request_rom_load(const char* path)
+{
+	if (path == NULL || path[0] == '\0')
+	{
+		return;
+	}
+
+	const size_t path_length = strlen(path);
+	if (path_length >= CART_MAX_PATH)
+	{
+		printf("ROM path is longer than %d characters and was not loaded: %s\n", CART_MAX_PATH - 1, path);
+		return;
+	}
+
+	memcpy(core_requested_rom_path, path, path_length + 1); // + 1 copies the terminating null
+	core_rom_load_pending = true; // Set last, so the path is complete before the request is visible
+}
+
+void core_poll_events()
+{
+	while (SDL_PollEvent(&gfx_render_ctx->event))
+	{
+		switch (gfx_render_ctx->event.type)
+		{
+		case SDL_EVENT_KEY_DOWN:
+			core_on_key_press(gfx_render_ctx->event.key.scancode, true);
+			break;
+		case SDL_EVENT_KEY_UP:
+			core_on_key_press(gfx_render_ctx->event.key.scancode, false);
+			break;
+		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+			core_quit_requested = true;
+			break;
+		case SDL_EVENT_QUIT:
+			core_quit_requested = true;
+			break;
+		}
+	}
+}
+
+void core_handle_rom_request()
+{
+	core_rom_load_pending = false; 
+
+	if (!cart_load(core_requested_rom_path))
+	{
+		return; // cart_load already prints an error message if it fails
+	}
+
+	// Put the machine in its initial state after loading a new ROM. memset first, so PPU and timer work correctly
+	memset(memory, 0, MEMORY_SIZE);
+	cpu_reset();
+	ppu_init();
+	ppu_reset();
+	timer_init();
+
+	cart_print_info();
+
+	core_time_frame_begin = std::chrono::steady_clock::now(); // Reset the frame timer after loading a new ROM
+}
+
+void core_idle()
+{
+	core_poll_events();
+	std::this_thread::sleep_for(std::chrono::milliseconds(16)); // About 60 polls per second while there is no ROM loaded
 }
 
 void core_advance_cpu_clocks(uint8_t clocks) 

@@ -44,7 +44,7 @@ const cart_ram_info cart_ram_size[] = {
 
 extern cart_header_struct* cartridge_header; // Pointer to the cartridge header structure
 
-bool cart_open_file();
+
 void cart_print_info();
 bool cart_load(const char* filename);
 bool cart_check_save(const char* rom_filename);

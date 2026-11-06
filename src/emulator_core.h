@@ -12,3 +12,4 @@ void core_shutdown(); // Shuts down the emulator core
 void core_on_frame();
 
 void core_advance_cpu_clocks(uint8_t clocks); // Advances the CPU clock by a specified number of cycles
+void core_request_rom_load(const char* path); // Requests loading a ROM from the specified path at the next safe point

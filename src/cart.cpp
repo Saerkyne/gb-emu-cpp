@@ -3,8 +3,9 @@
 #include "memory_bus.h"
 #include "rtc.h"
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include <chrono>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 
@@ -29,34 +30,6 @@ bool get_runtime_path() {
 	return true;
 }
 
-bool cart_open_file() {
-	if (!get_runtime_path()) {
-		return false;
-	}
-	
-	char filename[CART_MAX_PATH];
-
-	OPENFILENAMEA ofn;       // common dialog box structure
-	memset(&filename, 0, sizeof(filename)); // Initialize filename buffer
-	memset(&ofn, 0, sizeof(ofn)); // Initialize OPENFILENAME
-	ofn.lStructSize = sizeof(ofn); // Size of the structure
-	ofn.hwndOwner = NULL; // If you have a window to center over, put its handle here
-	ofn.lpstrFilter = "GB ROM Files\0*.gb;*.gbc\0All Files\0*.*\0"; // Filter for file types
-	ofn.lpstrFile = filename; // Buffer to store the selected file name
-	ofn.lpstrInitialDir = runtime_path_buffer; // Initial directory
-	ofn.nMaxFile = CART_MAX_PATH; // Maximum file name length
-	ofn.lpstrTitle = "Select a Game Boy ROM"; // Dialog title
-	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST; // Flags for the dialog
-
-	if (GetOpenFileNameA(&ofn)) {
-		if (cart_load(filename)) {
-			strncpy(rom_filename_buffer, filename, CART_MAX_PATH); // Store the ROM filename
-			return true;
-		}
-		return false;
-	}
-	return false;
-}
 
 void cart_print_info() {
 	printf("Entry point: %.2X%.2X%.2X%.2X\n", 
@@ -128,8 +101,9 @@ bool cart_load(const char* filename) {
 			cart_check_save(filename); // Check if a save file exists for this ROM and load it into ERAM if it does
 		}
 
-		
-
+		strncpy(rom_filename_buffer, filename, CART_MAX_PATH - 1); // Store the ROM filename
+		rom_filename_buffer[CART_MAX_PATH - 1] = '\0'; // strncpy doesn't terminate when the source fills the buffer
+		cartridge_loaded = true;
 
 		printf("ROM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
 		return true;
@@ -248,6 +222,11 @@ bool cart_open_save_file(const char* filename) {
 }
 
 bool cart_save_to_file(const char* filename) {
+
+	if (!cartridge_loaded) { // Nothing was ever loaded, so there is nothing to save
+		return false;
+	}
+
 	if (!cart_supports_saves) {
 		printf("Cartridge does not support saves.\n");
 		return false;
