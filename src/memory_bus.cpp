@@ -198,18 +198,15 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		{
 			// This value can never be 0b00000, it will always default to  0b00001
 			// This means that half of the bank registers are not accessible.
-			// rom_bank_number = value & 0b00011111;
-			// const uint32_t rom_size = 32 * (1 << cartridge_header->rom_size);
-			// const uint8_t number_of_rom_banks = rom_size / 16;
-			// rom_bank_number = rom_bank_number % number_of_rom_banks;
-
+			
 			rom_bank_number = value & 0b00011111;
+			
 			if (rom_bank_number == 0)
 			{
 				rom_bank_number = 1; // Bank 0 is not accessible, default to bank 1
 			}
 
-			rom_bank_number = rom_bank_number | ((rom_bank_number & 0b00000011) << 5); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
+			rom_bank_number = rom_bank_number | ((value & 0b01100000) >> 5); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
 
 			rom_bank_number = rom_bank_number & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 		}
