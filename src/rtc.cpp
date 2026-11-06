@@ -268,6 +268,10 @@ void rtc_catch_up(const uint64_t seconds) {
 	if (!cart_has_rtc) {
 		return; // If the cartridge doesn't have an RTC, do nothing
 	}
+	if (live_rtc_registers.rtc_days_high & 0b01000000)
+	{
+		return; // If the RTC is halted, do not catch up the RTC clock
+	}
 	for (uint64_t i = 0; i < seconds; i++) {
 		rtc_tick(); // Increment the RTC registers for each second
 	}
