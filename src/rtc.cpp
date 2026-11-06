@@ -224,14 +224,13 @@ uint64_t rtc_load_save_bytes(const uint64_t utc_timestamp, const uint8_t footer_
 
 			return loaded_utc_timestamp;
 		}
-		else if (footer_length == 44)
+		else
 		{
 			uint64_t  loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24);
 			return loaded_utc_timestamp;
 		}
 	}
 }
-
 void rtc_create_save_bytes(const uint64_t utc_timestamp) {
 	// Create a 48-byte value representing the current state of the RTC registers
 	// only exists as a 48 or 44 byte value by convention added to the end of a .sav file
