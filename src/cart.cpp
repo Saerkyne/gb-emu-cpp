@@ -168,6 +168,10 @@ bool cart_check_save(const char* rom_filename) {
 				printf("ROM %s has a RAM size of 0 but does have an RTC, which means a save size of 44 or 48 bytes.\n", rom_filename);
 				return true;
 			}
+			else
+			{
+				printf("No save found for ROM %s.\n", rom_filename);
+			}
 		}
 		printf("ROM %s has a bank count of 0 and no RTC, which means no save data.\n", rom_filename);
 		return false;
