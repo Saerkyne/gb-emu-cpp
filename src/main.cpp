@@ -21,9 +21,6 @@ int SDLCALL gb_emu_runapp_callback(int argc, char* argv[])
 		return error;
 	}
 
-	char* rom_path = "/home/cal/gb-emu-cpp/rom/Tetris.gb";
-	core_request_rom_load(rom_path);
-
 	core_run();
 
 	core_shutdown();
