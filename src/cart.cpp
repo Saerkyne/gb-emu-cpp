@@ -146,14 +146,14 @@ bool cart_check_save(const char* rom_filename) {
 			return false;
 		}
 
-		strncpy(save_filename_buffer, rom_filename, MAX_PATH); // Copy the ROM filename to the save_filename buffer
+		strncpy(save_filename_buffer, rom_filename, CART_MAX_PATH); // Copy the ROM filename to the save_filename buffer
 		// Replace the extension with .sav
 		char* dot = strrchr(save_filename_buffer, '.');
 		if (dot) {
 			strcpy(dot, ".sav");
 		}
 		else {
-			strncat(save_filename_buffer, ".sav", MAX_PATH - strlen(save_filename_buffer) - 1);
+			strncat(save_filename_buffer, ".sav", CART_MAX_PATH - strlen(save_filename_buffer) - 1);
 		}
 
 		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is greater than 0
