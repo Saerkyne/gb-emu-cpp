@@ -74,6 +74,11 @@ uint8_t memory_bus_read(const uint16_t addr)
 		} 
 		else if (cart_info.type == CART_TYPE::MBC1) 
 		{
+			if (!ram_enabled)
+			{
+				return 0xFF; // RAM is disabled, return 0xFF
+			}
+
 			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
 			const uint32_t bank_offset = ram_bank_number * RAM_BANK_SIZE;
 			const uint32_t eram_address = (addr - 0xA000) + bank_offset;
@@ -261,6 +266,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		} 
 		else if (cart_info.type == CART_TYPE::MBC1) 
 		{
+			if (!ram_enabled)
+			{
+				return; // RAM is disabled, ignore the write
+			}
 			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
 			const uint32_t offset = RAM_BANK_SIZE * ram_bank_number;
 			const uint32_t eram_address = offset + (addr - 0xA000);
