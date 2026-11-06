@@ -16,6 +16,7 @@ uint8_t save_data[ERAM_SIZE]; // Buffer to hold the save data
 uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 bool cartridge_loaded = false; // Flag to indicate if a cartridge is loaded
 cart_header_struct* cartridge_header = (cart_header_struct*)(cartridge_data + 0x100); // Pointer to the cartridge header structure, which is located at offset 0x100 in the cartridge data
+const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
 
 
 // Helper function to get path of currently running emulator
@@ -90,7 +91,7 @@ bool cart_load(const char* filename) {
 			printf("Warning: ROM size exceeds maximum cartridge size. Only the first %d bytes would be loaded.\n", MAX_CART_SIZE);
 			return false;
 		}
-		if (cart_type_data[cartridge_header->cartridge_type].type == CART_TYPE::MBC3)
+		if (cart_info.type == CART_TYPE::MBC3)
 		{
 			if (!(cartridge_header->ram_size >= 0x00 && cartridge_header->ram_size <= 0x03))
 			{
@@ -102,11 +103,11 @@ bool cart_load(const char* filename) {
 				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
 				return false;
 			}
-			if (cart_type_data[cartridge_header->cartridge_type].has_battery && ((cart_type_data[cartridge_header->cartridge_type].has_ram) || cart_type_data[cartridge_header->cartridge_type].has_timer))
+			if (cart_info.has_battery && (cart_info.has_ram || cart_info.has_timer))
 			{
 				cart_supports_saves = true;
 			}
-			if (cart_type_data[cartridge_header->cartridge_type].has_timer) // All carts with timers have batteries.
+			if (cart_info.has_timer) // All carts with timers have batteries.
 			{
 				rtc_init();
 			}
@@ -158,7 +159,7 @@ bool cart_check_save(const char* rom_filename) {
 			return false;
 		}
 
-		if ((cart_ram_size[cartridge_header->ram_size].bank_count == 0) && (cart_type_data[cartridge_header->cartridge_type].has_timer == true)) // Check if the RAM size is 0
+		if ((cart_ram_size[cartridge_header->ram_size].bank_count == 0) && (cart_info.has_timer == true)) // Check if the RAM size is 0
 		{
 			save_size = 0;
 			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
