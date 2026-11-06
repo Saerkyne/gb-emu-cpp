@@ -220,6 +220,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			else 
 			{
 				rom_bank_number = (rom_bank_number & 0b00011111) | ((value & 0b00000011) << 5);
+				rom_bank_number = rom_bank_number & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 			}
 		}
 
