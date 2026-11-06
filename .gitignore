@@ -10,3 +10,5 @@ compile_commands.json
 .idea/*
 !.idea/codeStyles/*
 rom/*
+_deps/
+.kdev4/
