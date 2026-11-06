@@ -160,9 +160,14 @@ bool cart_check_save(const char* rom_filename) {
 
 		if ((cart_ram_size[cartridge_header->ram_size].bank_count == 0) && (cart_type_data[cartridge_header->cartridge_type].has_timer == true)) // Check if the RAM size is 0
 		{
-			printf("ROM %s has a RAM size of 0 but does have an RTC, which means a save size of 44 or 48 bytes.\n", rom_filename);
-			memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
-			return true;
+			save_size = 0;
+			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
+			{
+				// logic to load save file into ERAM
+				memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
+				printf("ROM %s has a RAM size of 0 but does have an RTC, which means a save size of 44 or 48 bytes.\n", rom_filename);
+				return true;
+			}
 		}
 		printf("ROM %s has a bank count of 0 and no RTC, which means no save data.\n", rom_filename);
 		return false;
@@ -206,12 +211,17 @@ bool cart_open_save_file(const char* filename) {
 
 		if (footer_length != 0)
 		{
-			rtc_save_bytes[0] = save_data[save_size + 0];
+			memcpy(rtc_save_bytes, save_data + save_size, footer_length); // Copy the footer data into the rtc_save_bytes buffer
+			
 			uint64_t current_utc_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // Get the current UTC timestamp
 			uint64_t loaded_utc_timestamp = rtc_load_save_bytes(current_utc_timestamp, footer_length); // Load the RTC registers from the save file footer; save the loaded timestamp
 
+			if (current_utc_timestamp > loaded_utc_timestamp)
+			{
+				uint64_t seconds_to_catch_up = current_utc_timestamp - loaded_utc_timestamp;
+				rtc_catch_up(seconds_to_catch_up); // Catch up the RTC registers by the difference in seconds
+			}
 		}
-
 		printf("Save file %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
 		return true;
 	}
