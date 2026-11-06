@@ -16,7 +16,7 @@ uint8_t save_data[ERAM_SIZE]; // Buffer to hold the save data
 uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 bool cartridge_loaded = false; // Flag to indicate if a cartridge is loaded
 cart_header_struct* cartridge_header = (cart_header_struct*)(cartridge_data + 0x100); // Pointer to the cartridge header structure, which is located at offset 0x100 in the cartridge data
-const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
+cart_type_info& cart_info;
 
 
 // Helper function to get path of currently running emulator
@@ -86,6 +86,7 @@ bool cart_load(const char* filename) {
 		file.seekg(0, std::ios::beg); // Move to the beginning of the file
 		file.read((char*)cartridge_data, MAX_CART_SIZE); // Read the file into the cartridge_data buffer
 		file.close();
+		cart_info = cart_type_data[cartridge_header->cartridge_type];
 		if (size > MAX_CART_SIZE) 
 		{
 			printf("Warning: ROM size exceeds maximum cartridge size. Only the first %d bytes would be loaded.\n", MAX_CART_SIZE);
