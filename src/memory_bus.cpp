@@ -102,7 +102,8 @@ uint8_t memory_bus_read(const uint16_t addr)
 			if (rom_ram_mode_select) // RAM banking mode
 			{
 				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-				const uint32_t bank_offset = ram_bank_number * RAM_BANK_SIZE;
+				const uint16_t ram_bank = rom_second_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+				const uint32_t bank_offset = ram_bank * RAM_BANK_SIZE;
 				const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 				return eram[eram_address];
 			}
@@ -294,10 +295,21 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			{
 				return; // RAM is disabled, ignore the write
 			}
-			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-			const uint32_t offset = RAM_BANK_SIZE * ram_bank_number;
-			const uint32_t eram_address = offset + (addr - 0xA000);
-			eram[eram_address] = value;
+
+			if (rom_ram_mode_select)
+			{
+				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+				const uint16_t ram_bank = rom_second_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+				const uint32_t offset = RAM_BANK_SIZE * ram_bank;
+				const uint32_t eram_address = offset + (addr - 0xA000);
+				eram[eram_address] = value;
+			}
+			else
+			{
+				
+				eram[addr - 0xA000] = value;
+			}
+			
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
 		{
