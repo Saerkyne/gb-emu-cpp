@@ -157,7 +157,14 @@ bool cart_check_save(const char* rom_filename) {
 			}
 			return false;
 		}
-		printf("ROM %s has a bank count of 0, which means no save data.\n", rom_filename);
+
+		if ((cart_ram_size[cartridge_header->ram_size].bank_count == 0) && (cart_type_data[cartridge_header->cartridge_type].has_timer == true)) // Check if the RAM size is 0
+		{
+			printf("ROM %s has a RAM size of 0 but does have an RTC, which means a save size of 44 or 48 bytes.\n", rom_filename);
+			memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
+			return true;
+		}
+		printf("ROM %s has a bank count of 0 and no RTC, which means no save data.\n", rom_filename);
 		return false;
 	}
 	else 
@@ -181,22 +188,28 @@ bool cart_open_save_file(const char* filename) {
 			printf("Warning: Save file size is smaller than expected save size (%u bytes).\n", save_size);
 			return false;
 		}
-
-		if (size == (save_size + 44))
+		else if (size == (save_size + 44) && cart_has_rtc)
 		{
 			printf("Save has a 44 byte footer.\n");
 			footer_length = 44;
 		}
-		if (size == (save_size + 48))
+		else if (size == (save_size + 48) && cart_has_rtc)
 		{
 			printf("Save has a 48 byte footer.\n");
 			footer_length = 48;
 		}
+		else if (size > save_size && !cart_has_rtc)
+		{
+			printf("Warning: Save file size is larger than expected save size (%u bytes) and has no RTC.\n", save_size);
+			return false;
+		}
 
 		if (footer_length != 0)
 		{
-			uint64_t loaded_utc_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // Get the current UTC timestamp
-			rtc_load_save_bytes(loaded_utc_timestamp, footer_length); // Load the RTC registers from the save file footer
+			rtc_save_bytes[0] = save_data[save_size + 0];
+			uint64_t current_utc_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // Get the current UTC timestamp
+			uint64_t loaded_utc_timestamp = rtc_load_save_bytes(current_utc_timestamp, footer_length); // Load the RTC registers from the save file footer; save the loaded timestamp
+
 		}
 
 		printf("Save file %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
