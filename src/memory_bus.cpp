@@ -12,19 +12,40 @@
 uint8_t memory[MEMORY_SIZE];
 uint8_t eram[ERAM_SIZE];
 
-uint16_t rom_bank_number = 0;
+uint16_t rom_bank_number = 1; // Default to bank 1 for MBC1 and MBC3
+uint16_t rom_second_bank_number = 0; // Used for MBC1 when in ROM banking mode
 uint16_t ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 bool ram_enabled = false;
 bool rom_ram_mode_select = false;
 
 uint8_t memory_bus_read(const uint16_t addr) 
 {
+
+	const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
+
 	if (addr >= 0x0000 && addr <= 0x3FFF) // Read from ROM bank 00
 	{
+		if (cart_info.type == CART_TYPE::NO_MBC)
+		{
+			return cartridge_data[addr]; // For no MBC cartridges
+		}
+		else if (cart_info.type == CART_TYPE::MBC1)
+		{
+			if (rom_ram_mode_select)
+			{
+				uint8_t rom_bank = (rom_second_bank_number << 5) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
+				return  cartridge_data[rom_bank * 0x4000 + (addr - 0x0000)]; // Calculate the address based on the selected ROM bank
+			}
+			return cartridge_data[addr]; // For MBC1, bank 00 is always accessible
+		}
+		else if (cart_info.type == CART_TYPE::MBC3)
+		{
+			return cartridge_data[addr]; // For MBC3, bank 00 is always accessible
+		}
 		return cartridge_data[addr];
 	}
 
-	const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
+	
 
 	if (addr >= 0x4000 && addr <= 0x7FFF) // Read from ROM bank 01~NN
 	{ 
@@ -35,7 +56,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 		else if (cart_info.type == CART_TYPE::MBC1) 
 		{
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
-			uint8_t rom_bank = rom_bank_number > 0 ? rom_bank_number : 1;
+			uint8_t rom_bank = ((rom_second_bank_number << 5) | rom_bank_number) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
 			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
@@ -78,11 +99,18 @@ uint8_t memory_bus_read(const uint16_t addr)
 			{
 				return 0xFF; // RAM is disabled, return 0xFF
 			}
-
-			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-			const uint32_t bank_offset = ram_bank_number * RAM_BANK_SIZE;
-			const uint32_t eram_address = (addr - 0xA000) + bank_offset;
-			return eram[eram_address];
+			if (rom_ram_mode_select) // RAM banking mode
+			{
+				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+				const uint32_t bank_offset = ram_bank_number * RAM_BANK_SIZE;
+				const uint32_t eram_address = (addr - 0xA000) + bank_offset;
+				return eram[eram_address];
+			}
+			else
+			{
+				const uint32_t eram_address = (addr - 0xA000);
+				return eram[eram_address];
+			}
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
 		{
@@ -205,23 +233,11 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			{
 				rom_bank_number = 1; // Bank 0 is not accessible, default to bank 1
 			}
-
-			rom_bank_number = rom_bank_number | ((value & 0b01100000) >> 5); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
-
-			rom_bank_number = rom_bank_number & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 		}
 
 		if (addr >= 0x4000 && addr <= 0x5FFF) // ROM Bank Register 2 (2 bits) or RAM Bank Register (2 bits)
 		{
-			if (rom_ram_mode_select) 
-			{
-				ram_bank_number = value & 0b00000011;
-			} 
-			else 
-			{
-				rom_bank_number = (rom_bank_number & 0b00011111) | ((value & 0b00000011) << 5);
-				rom_bank_number = rom_bank_number & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
-			}
+			rom_second_bank_number = value & 0b00000011; // This is a 2-bit register
 		}
 
 		if (addr >= 0x6000 && addr <= 0x7FFF) 
