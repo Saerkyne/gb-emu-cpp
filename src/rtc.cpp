@@ -200,31 +200,35 @@ uint8_t rtc_register_read(const uint16_t selector) {
 
 uint64_t rtc_load_save_bytes(const uint64_t utc_timestamp, const uint8_t footer_length) {
 	
-	live_rtc_registers.rtc_seconds = (rtc_save_bytes[0]) & 0x3F;
-	live_rtc_registers.rtc_minutes = (rtc_save_bytes[4]) & 0x3F;
-	live_rtc_registers.rtc_hours = (rtc_save_bytes[8]) & 0x1F;
-	live_rtc_registers.rtc_days_low = (rtc_save_bytes[12]) & 0xFF;
-	live_rtc_registers.rtc_days_high = (rtc_save_bytes[16]) & 0xC1;
-	latch_rtc_registers.rtc_seconds = (rtc_save_bytes[20]) & 0x3F;
-	latch_rtc_registers.rtc_minutes = (rtc_save_bytes[24]) & 0x3F;
-	latch_rtc_registers.rtc_hours = (rtc_save_bytes[28]) & 0x1F;
-	latch_rtc_registers.rtc_days_low = (rtc_save_bytes[32]) & 0xFF;
-	latch_rtc_registers.rtc_days_high = (rtc_save_bytes[36]) & 0xC1;
-	
-	if (footer_length == 48)
+	if (footer_length != 48 && footer_length != 44) 
 	{
-		uint64_t loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24) | ((uint64_t)rtc_save_bytes[44] << 32) | ((uint64_t)rtc_save_bytes[45] << 40) | ((uint64_t)rtc_save_bytes[46] << 48) | ((uint64_t)rtc_save_bytes[47] << 56);
-		
-		return loaded_utc_timestamp;
+		printf("Warning: RTC save footer length is not 48 or 44 bytes. Registers are not loaded, current UTC time returned.\n");
+		return utc_timestamp;
 	}
-	else if (footer_length == 44)
+	else
 	{
-		uint64_t  loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24);
-		return loaded_utc_timestamp;
-	}
-	else {
-		printf("Warning: RTC save footer length is not 48 or 44 bytes. Registers loaded, but UTC timestamp will be incorrect.\n");
-		return utc_timestamp; // Return the original timestamp if the footer length is incorrect
+		live_rtc_registers.rtc_seconds = (rtc_save_bytes[0]) & 0x3F;
+		live_rtc_registers.rtc_minutes = (rtc_save_bytes[4]) & 0x3F;
+		live_rtc_registers.rtc_hours = (rtc_save_bytes[8]) & 0x1F;
+		live_rtc_registers.rtc_days_low = (rtc_save_bytes[12]) & 0xFF;
+		live_rtc_registers.rtc_days_high = (rtc_save_bytes[16]) & 0xC1;
+		latch_rtc_registers.rtc_seconds = (rtc_save_bytes[20]) & 0x3F;
+		latch_rtc_registers.rtc_minutes = (rtc_save_bytes[24]) & 0x3F;
+		latch_rtc_registers.rtc_hours = (rtc_save_bytes[28]) & 0x1F;
+		latch_rtc_registers.rtc_days_low = (rtc_save_bytes[32]) & 0xFF;
+		latch_rtc_registers.rtc_days_high = (rtc_save_bytes[36]) & 0xC1;
+
+		if (footer_length == 48)
+		{
+			uint64_t loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24) | ((uint64_t)rtc_save_bytes[44] << 32) | ((uint64_t)rtc_save_bytes[45] << 40) | ((uint64_t)rtc_save_bytes[46] << 48) | ((uint64_t)rtc_save_bytes[47] << 56);
+
+			return loaded_utc_timestamp;
+		}
+		else if (footer_length == 44)
+		{
+			uint64_t  loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24);
+			return loaded_utc_timestamp;
+		}
 	}
 }
 
@@ -258,6 +262,15 @@ void rtc_create_save_bytes(const uint64_t utc_timestamp) {
 	rtc_save_bytes[45] = (utc_timestamp & 0xFF0000000000) >> 40;
 	rtc_save_bytes[46] = (utc_timestamp & 0xFF000000000000) >> 48;
 	rtc_save_bytes[47] = (utc_timestamp & 0xFF00000000000000) >> 56;
+}
+
+void rtc_catch_up(const uint64_t seconds) {
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+	for (uint64_t i = 0; i < seconds; i++) {
+		rtc_tick(); // Increment the RTC registers for each second
+	}
 }
 
 void rtc_init() {
