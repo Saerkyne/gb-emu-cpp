@@ -17,8 +17,8 @@ void debug_log(const char* fmt, ...) {
 
 	if (log_to_file) {
 		if (!logfile) {
-			const errno_t err = fopen_s(&logfile, "./logs/logfile.txt", "w");
-			if (err != 0) {
+			logfile = fopen("./logs/logfile.txt", "w");
+			if (!logfile) {
 				printf("Failed to open logfile.txt for writing!\n");
 				log_to_file = false;
 				return;

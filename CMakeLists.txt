@@ -59,12 +59,17 @@ target_compile_options(gb-emu-cpp PRIVATE
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic>
 )
 
-# Copy SDL3.dll next to the exe on Windows
-add_custom_command(TARGET gb-emu-cpp POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          $<TARGET_RUNTIME_DLLS:gb-emu-cpp> $<TARGET_FILE_DIR:gb-emu-cpp>
-  COMMAND_EXPAND_LISTS
-)
+# Copy SDL3.dll next to the exe on Windows.
+# Linux has no DLLs: the list would be empty, the copy command would fail,
+# and make would delete the freshly linked executable. The rpath CMake
+# embeds in the Linux binary already points at libSDL3.so.
+if(WIN32)
+  add_custom_command(TARGET gb-emu-cpp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:gb-emu-cpp> $<TARGET_FILE_DIR:gb-emu-cpp>
+    COMMAND_EXPAND_LISTS
+  )
+endif()
 
 # Keep runtime relative paths based on repo root during debugging in Visual Studio
 set_target_properties(gb-emu-cpp PROPERTIES

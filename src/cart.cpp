@@ -2,14 +2,15 @@
 #include "cart_type.h"
 #include "memory_bus.h"
 #include "rtc.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <chrono>
 #include <iostream>
 #include <fstream>
-#include <Windows.h>
 
-char runtime_path_buffer[MAX_PATH]; // Buffer to hold the runtime path
-char rom_filename_buffer[MAX_PATH]; // Buffer to hold the ROM filename
-char save_filename_buffer[MAX_PATH]; // Buffer to hold the save filename
+char runtime_path_buffer[CART_MAX_PATH]; // Buffer to hold the runtime path
+char rom_filename_buffer[CART_MAX_PATH]; // Buffer to hold the ROM filename
+char save_filename_buffer[CART_MAX_PATH]; // Buffer to hold the save filename
 bool cart_supports_saves = false; // Flag to indicate if the currently loaded cartridge supports saves
 uint32_t save_size; // Size of the save file, calculated based on the cartridge RAM size
 uint8_t save_data[ERAM_SIZE]; // Buffer to hold the save data
@@ -20,9 +21,11 @@ cart_header_struct* cartridge_header = (cart_header_struct*)(cartridge_data + 0x
 
 // Helper function to get path of currently running emulator
 bool get_runtime_path() {
-	if (GetCurrentDirectoryA(MAX_PATH, runtime_path_buffer) == 0) {
+	const char* base_path = SDL_GetBasePath();
+	if (base_path == NULL) {
 		return false;
 	}
+	strncpy(runtime_path_buffer, base_path, CART_MAX_PATH);
 	return true;
 }
 
@@ -31,23 +34,23 @@ bool cart_open_file() {
 		return false;
 	}
 	
-	char filename[MAX_PATH];
+	char filename[CART_MAX_PATH];
 
 	OPENFILENAMEA ofn;       // common dialog box structure
-	ZeroMemory(&filename, sizeof(filename)); // Initialize filename buffer
-	ZeroMemory(&ofn, sizeof(ofn)); // Initialize OPENFILENAME
+	memset(&filename, 0, sizeof(filename)); // Initialize filename buffer
+	memset(&ofn, 0, sizeof(ofn)); // Initialize OPENFILENAME
 	ofn.lStructSize = sizeof(ofn); // Size of the structure
 	ofn.hwndOwner = NULL; // If you have a window to center over, put its handle here
 	ofn.lpstrFilter = "GB ROM Files\0*.gb;*.gbc\0All Files\0*.*\0"; // Filter for file types
 	ofn.lpstrFile = filename; // Buffer to store the selected file name
 	ofn.lpstrInitialDir = runtime_path_buffer; // Initial directory
-	ofn.nMaxFile = MAX_PATH; // Maximum file name length
+	ofn.nMaxFile = CART_MAX_PATH; // Maximum file name length
 	ofn.lpstrTitle = "Select a Game Boy ROM"; // Dialog title
 	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST; // Flags for the dialog
 
 	if (GetOpenFileNameA(&ofn)) {
 		if (cart_load(filename)) {
-			strncpy(rom_filename_buffer, filename, MAX_PATH); // Store the ROM filename
+			strncpy(rom_filename_buffer, filename, CART_MAX_PATH); // Store the ROM filename
 			return true;
 		}
 		return false;

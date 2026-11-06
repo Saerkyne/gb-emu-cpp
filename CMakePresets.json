@@ -1,17 +1,17 @@
 {
-    "version": 8,
+    "version": 6,
     "configurePresets": [
         {
             "name": "GCC",
+            "displayName": "GCC 15.2.0 x86_64-w64-mingw32 (ucrt64)",
+            "description": "Using compilers: C = C:\\msys64\\ucrt64\\bin\\gcc.exe, CXX = C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "generator": "MinGW Makefiles",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             },
-            "displayName": "GCC 15.2.0 x86_64-w64-mingw32 (ucrt64)",
-            "description": "Using compilers: C = C:\\msys64\\ucrt64\\bin\\gcc.exe, CXX = C:\\msys64\\ucrt64\\bin\\g++.exe",
-            "generator": "MinGW Makefiles",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "CMAKE_C_COMPILER": "C:/msys64/ucrt64/bin/gcc.exe",
@@ -21,17 +21,19 @@
         },
         {
             "name": "Linux-GCC",
+            "displayName": "Linux GCC (Debug)",
+            "description": "Uses the system-default C and C++ compilers on Linux.",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Linux"
             },
-            "displayName": "Linux GCC (Debug)",
-            "description": "Uses the system-default C and C++ compilers on Linux.",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         }

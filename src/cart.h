@@ -1,13 +1,13 @@
 #pragma once
 
 #include <stdint.h>
-#include <Windows.h>
 
 const int MAX_CART_SIZE = 1024 * 1024 * 8; // 8MB
+const int CART_MAX_PATH = 260; // Maximum path length for Windows
 extern uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 extern bool cartridge_loaded; // Flag to indicate if a cartridge is loaded
 extern bool cart_supports_saves; // Flag to indicate if the currently loaded cartridge supports saves
-extern char save_filename_buffer[MAX_PATH]; // Buffer exposed for saving to file on shutdown
+extern char save_filename_buffer[CART_MAX_PATH]; // Buffer exposed for saving to file on shutdown
 extern uint32_t save_size; // Size of the save file, calculated based on the cartridge RAM size
 
 struct cart_header_struct {
