@@ -120,15 +120,28 @@ bool cart_check_save(const char* rom_filename) {
 			return false;
 		}
 
-		strncpy(save_filename_buffer, rom_filename, CART_MAX_PATH); // Copy the ROM filename to the save_filename buffer
-		// Replace the extension with .sav
-		char* dot = strrchr(save_filename_buffer, '.');
-		if (dot) {
-			strcpy(dot, ".sav");
+		// The save name is the ROM path with its extension replaced by .sav. Only a dot in the
+		// file name itself counts, not one in a folder name like "my.games/tetris".
+		const char* name_start = rom_filename;
+		const char* last_slash = strrchr(rom_filename, '/');
+		const char* last_backslash = strrchr(rom_filename, '\\'); // Windows accepts either separator
+		if (last_slash && last_slash + 1 > name_start) {
+			name_start = last_slash + 1;
 		}
-		else {
-			strncat(save_filename_buffer, ".sav", CART_MAX_PATH - strlen(save_filename_buffer) - 1);
+		if (last_backslash && last_backslash + 1 > name_start) {
+			name_start = last_backslash + 1;
 		}
+		const char* dot = strrchr(name_start, '.');
+		const size_t stem_length = dot ? (size_t)(dot - rom_filename) : strlen(rom_filename);
+
+		// ".sav" can be longer than the extension it replaces, so check that the result fits
+		if (stem_length + strlen(".sav") >= CART_MAX_PATH) {
+			printf("The path to ROM %s is too long to put a save file next to it. Progress will not be saved.\n", rom_filename);
+			cart_supports_saves = false; // No valid save name, so shutdown must not try to write one
+			return false;
+		}
+		memcpy(save_filename_buffer, rom_filename, stem_length);
+		strcpy(save_filename_buffer + stem_length, ".sav");
 
 		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is greater than 0
 		{

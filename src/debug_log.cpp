@@ -1,6 +1,8 @@
 #include "debug_log.h"
+#include <SDL3/SDL.h>
 #include <iostream>
 #include <cstdarg>
+#include <string>
 
 bool log_to_console = true;
 bool log_to_file = true;
@@ -17,9 +19,16 @@ void debug_log(const char* fmt, ...) {
 
 	if (log_to_file) {
 		if (!logfile) {
-			logfile = fopen("./logs/logfile.txt", "w");
+			// Anchor the log to the executable's folder. The working directory isn't reliable:
+			// launching by dropping a ROM onto the executable can start us almost anywhere.
+			const char* base_path = SDL_GetBasePath(); // Ends with a separator; owned by SDL, so don't free it
+			const std::string log_dir = std::string(base_path ? base_path : "./") + "logs";
+			SDL_CreateDirectory(log_dir.c_str()); // Also succeeds when the folder already exists
+			const std::string log_path = log_dir + "/logfile.txt";
+
+			logfile = fopen(log_path.c_str(), "w");
 			if (!logfile) {
-				printf("Failed to open logfile.txt for writing!\n");
+				printf("Failed to open %s for writing!\n", log_path.c_str());
 				log_to_file = false;
 				return;
 			}
