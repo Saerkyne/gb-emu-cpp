@@ -73,7 +73,7 @@ void core_shutdown()
 	gfx_destroy(gfx_render_ctx);
 	gfx_destroy(gfx_debug_ctx);
 	
-	cart_save_to_file(save_filename_buffer);
+	cart_unload(); // Saves the game if it supports saves
 
 	SDL_Quit();
 
@@ -155,18 +155,22 @@ void core_poll_events()
 
 void core_handle_rom_request()
 {
-	core_rom_load_pending = false; 
-	if (cartridge_loaded) 
+	core_rom_load_pending = false;
+
+	// Check the new file before touching anything, so a bad file leaves the running game alone
+	if (!cart_check_rom_file(core_requested_rom_path))
 	{
-		// Temporary: replacing a running game needs the old game saved and the cartridge
-		// state reset first. Until that exists, running game stays.
-		printf("A game is already running, please close it before loading a new one.\n");
-		return;
+		return; // cart_check_rom_file already printed the reason
 	}
+
+	// Take out the old cartridge: save it, then put everything cartridge-side back to power-on
+	cart_unload();
+	memory_bus_reset(); // MBC registers
+	rtc_reset(); // Must come before cart_load, which can start the clock and load it from the save file
 
 	if (!cart_load(core_requested_rom_path))
 	{
-		return; // cart_load already prints an error message if it fails
+		return; // Rare after the check above (a read error, for example); the emulator is now idle
 	}
 
 	// Put the machine in its initial state after loading a new ROM. memset first, so PPU and timer work correctly

@@ -46,7 +46,9 @@ extern cart_header_struct* cartridge_header; // Pointer to the cartridge header 
 
 
 void cart_print_info();
+bool cart_check_rom_file(const char* filename); // Validates a ROM's file size and header without touching the loaded cartridge
 bool cart_load(const char* filename);
+void cart_unload(); // Saves the current game if it supports saves, then returns the cartridge state to "nothing loaded"
 bool cart_check_save(const char* rom_filename);
 bool cart_open_save_file(const char* filename);
 bool cart_save_to_file(const char* filename);

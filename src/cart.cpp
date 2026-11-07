@@ -29,6 +29,23 @@ bool get_runtime_path() {
 	return true;
 }
 
+void cart_unload() {
+	if (cartridge_loaded && cart_supports_saves)
+	{
+		cart_save_to_file(save_filename_buffer); // Uses save_size and save_filename_buffer, so it runs before they are cleared
+	}
+
+	cartridge_loaded = false;
+	cart_supports_saves = false;
+	save_size = 0;
+	rom_filename_buffer[0] = '\0';
+	save_filename_buffer[0] = '\0';
+
+	// The next cartridge starts from the same blank slate as a fresh start of the emulator
+	memset(cartridge_data, 0, MAX_CART_SIZE);
+	memset(save_data, 0, ERAM_SIZE);
+	memset(eram, 0, ERAM_SIZE); // Cartridge RAM belongs to the cartridge being removed
+}
 
 void cart_print_info() {
 	printf("Entry point: %.2X%.2X%.2X%.2X\n", 
@@ -50,6 +67,59 @@ void cart_print_info() {
 	printf("Global Checksum: %.2X%.2X\n", cartridge_header->global_checksum_high, cartridge_header->global_checksum_low);
 }
 
+static bool cart_header_is_valid(const uint8_t* rom, const char* filename) {
+	const cart_header_struct* header = (const cart_header_struct*)(rom + 0x100);
+
+	uint8_t checksum = 0;
+	for (uint16_t address = 0x0134; address <= 0x014C; address++)
+	{
+		checksum = checksum -rom[address] - 1;
+	}
+	if (checksum != header->header_checksum)
+	{
+		printf("ROM %s has an invalid header checksum (0x%02X). Expected 0x%02X. This is not supported. Please check the ROM.\n", filename, header->header_checksum, checksum);
+		return false;
+	}
+
+	if (cart_type_data[header->cartridge_type].type == CART_TYPE::MBC3)
+	{
+		if (!(header->ram_size >= 0x00 && header->ram_size <= 0x03))
+		{
+			printf("ROM %s is using MBC3 with invalid ERAM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, header->ram_size);
+			return false;
+		}
+		if (!(header->rom_size >= 0x00 && header->rom_size <= 0x06))
+		{
+			printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, header->rom_size);
+			return false;
+		}
+	}
+	return true;
+}
+
+bool cart_check_rom_file(const char* filename) {
+	SDL_IOStream* file = SDL_IOFromFile(filename, "rb");
+	if (file == NULL) 
+	{
+		printf("Failed to open ROM %s: %s\n", filename, SDL_GetError());
+		return false;
+	}
+
+	uint8_t header_bytes[0x150]; // Everything from the start of the file through the end of the header
+	const Sint64 size = SDL_GetIOSize(file);
+	const size_t bytes_read = (size >= (Sint64)sizeof(header_bytes)) ? SDL_ReadIO(file, header_bytes, sizeof(header_bytes)) : 0;
+	SDL_CloseIO(file);
+
+	if (size < (Sint64)sizeof(header_bytes) || bytes_read != sizeof(header_bytes)) {
+		printf("ROM %s is too small to contain a valid header. Size: %lld bytes\n", filename, (long long)size);
+		return false;
+	}
+	if (size > MAX_CART_SIZE) {
+		printf("ROM %s is too large to be loaded. Size: %lld bytes, Max: %d bytes\n", filename, (long long)size, MAX_CART_SIZE);
+		return false;
+	}
+	return cart_header_is_valid(header_bytes, filename);
+}
 
 // Loads a Game Boy ROM from the specified filename into the cartridge_data buffer. Returns true if successful, false otherwise.
 bool cart_load(const char* filename) {
@@ -84,6 +154,11 @@ bool cart_load(const char* filename) {
 		return false;
 	}
 
+	if (size < 0x150 || !cart_header_is_valid(cartridge_data, filename))
+	{
+		return false; // cart_header_is_valid printed the reason
+	}
+
 	cart_type_info cart_info = cart_type_data[cartridge_header->cartridge_type];
 	switch (cart_info.type)
 	{
@@ -102,16 +177,6 @@ bool cart_load(const char* filename) {
 	case CART_TYPE::MBC3:
 		if (cart_info.type == CART_TYPE::MBC3)
 		{
-			if (!(cartridge_header->ram_size >= 0x00 && cartridge_header->ram_size <= 0x03))
-			{
-				printf("ROM %s is using MBC3 with invalid ERAM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->ram_size);
-				return false;
-			}
-			if (!(cartridge_header->rom_size >= 0x00 && cartridge_header->rom_size <= 0x06))
-			{
-				printf("ROM %s is using MBC3 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, cartridge_header->rom_size);
-				return false;
-			}
 			if (cart_info.has_battery && (cart_info.has_ram || cart_info.has_timer))
 			{
 				cart_supports_saves = true;
