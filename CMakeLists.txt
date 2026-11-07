@@ -75,3 +75,43 @@ endif()
 set_target_properties(gb-emu-cpp PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
+
+# Linux desktop entry. It puts the emulator in file managers' "Open With" menus and
+# lets you drop ROMs onto its launcher. The generated file points at this build's
+# executable, so it stays valid across rebuilds; reinstall it only if the build folder moves.
+if(UNIX AND NOT APPLE)
+  file(GENERATE
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/gb-emu-cpp.desktop"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/platform/linux/gb-emu-cpp.desktop.in"
+  )
+
+  # Per-user applications folder from the XDG spec
+  if(DEFINED ENV{XDG_DATA_HOME} AND NOT "$ENV{XDG_DATA_HOME}" STREQUAL "")
+    set(GB_EMU_APPLICATIONS_DIR "$ENV{XDG_DATA_HOME}/applications")
+  else()
+    set(GB_EMU_APPLICATIONS_DIR "$ENV{HOME}/.local/share/applications")
+  endif()
+
+  # Refresh the menu caches if the tools exist. update-desktop-database covers
+  # GNOME-style "Open With" lists; kbuildsycoca is KDE's cache, which Dolphin reads.
+  find_program(GB_EMU_UPDATE_DESKTOP_DATABASE update-desktop-database)
+  find_program(GB_EMU_KBUILDSYCOCA NAMES kbuildsycoca6 kbuildsycoca5)
+  set(GB_EMU_REFRESH_MENU_CACHES "")
+  if(GB_EMU_UPDATE_DESKTOP_DATABASE)
+    list(APPEND GB_EMU_REFRESH_MENU_CACHES COMMAND "${GB_EMU_UPDATE_DESKTOP_DATABASE}" "${GB_EMU_APPLICATIONS_DIR}")
+  endif()
+  if(GB_EMU_KBUILDSYCOCA)
+    list(APPEND GB_EMU_REFRESH_MENU_CACHES COMMAND "${GB_EMU_KBUILDSYCOCA}")
+  endif()
+
+  # Opt-in, never part of a normal build:
+  #   cmake --build out/build/Linux-GCC --target install-desktop-entry
+  add_custom_target(install-desktop-entry
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${GB_EMU_APPLICATIONS_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/gb-emu-cpp.desktop" "${GB_EMU_APPLICATIONS_DIR}/gb-emu-cpp.desktop"
+    ${GB_EMU_REFRESH_MENU_CACHES}
+    COMMENT "Installing gb-emu-cpp.desktop into ${GB_EMU_APPLICATIONS_DIR}"
+    VERBATIM
+  )
+  add_dependencies(install-desktop-entry gb-emu-cpp)
+endif()
