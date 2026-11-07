@@ -297,3 +297,20 @@ void rtc_init() {
 	rtc_previous_latch_write = 0xFF; // Set to an invalid value to ensure the first write is not treated as a latch command
 	cart_has_rtc = true;
 }
+
+void rtc_reset() {
+	live_rtc_registers.rtc_seconds = 0;
+	live_rtc_registers.rtc_minutes = 0;
+	live_rtc_registers.rtc_hours = 0;
+	live_rtc_registers.rtc_days_low = 0;
+	live_rtc_registers.rtc_days_high = 0;
+	latch_rtc_registers.rtc_seconds = 0;
+	latch_rtc_registers.rtc_minutes = 0;
+	latch_rtc_registers.rtc_hours = 0;
+	latch_rtc_registers.rtc_days_low = 0;
+	latch_rtc_registers.rtc_days_high = 0;
+	rtc_subsecond_counter = 0;
+	rtc_previous_latch_write = 0xFF; // Reset to an invalid value to ensure the first write is not treated as a latch command
+	cart_has_rtc = false; // Reset the cart_has_rtc flag to false
+	
+}

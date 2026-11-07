@@ -24,6 +24,19 @@ void cpu_reset() {
 	cpu_registers.hl = 0x014D;
 	cpu_registers.sp = 0xFFFE;
 	cpu_registers.pc = 0x0100; // Start executing at the beginning of the cartridge
+
+	cpu_current_op_code = 0;
+	cpu_instruction_counter = 0;
+	cpu_current_instruction_execute = nullptr;
+	cpu_halt_count = 0;
+	cpu_halt_bug = false;
+	cpu_debug_instructions = true;
+	ime_delay_occured = false;
+
+	interrupt_master_enable = false;
+	interrupt_enable_ime_delay = 0;
+
+	
 }
 
 void cpu_tick() {

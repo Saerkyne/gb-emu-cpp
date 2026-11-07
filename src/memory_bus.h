@@ -18,6 +18,7 @@ extern uint8_t eram[ERAM_SIZE];
 
 uint8_t memory_bus_read(const uint16_t addr);
 void memory_bus_write(const uint16_t addr, const uint8_t value);
+void memory_bus_reset();
 
 // Might be worth adding a function here: for MBC3 read/write. some duplicated code for 
 // checking if RAM is enabled, and if the bank number is valid. Could be a helper function to reduce code duplication.

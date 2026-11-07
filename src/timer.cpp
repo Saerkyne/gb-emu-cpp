@@ -18,6 +18,15 @@ void timer_init() {
     timer_registers->timer_tma = 0;
 }
 
+void timer_reset() {
+    timer_internal_sysclk = 0xABCC;
+    timer_registers->timer_div = 0xAB;
+    timer_registers->timer_tac = 0;
+    timer_registers->timer_tima = 0;
+    timer_registers->timer_tma = 0;
+    timer_interrupt_delay = 0;
+}
+
 void timer_check_clock_edges(const uint16_t prev_sysclk) {
     const uint8_t div_prev = timer_registers->timer_div;
     const bool div_bit_4_prev = (timer_registers->timer_div >> 4) & 1;

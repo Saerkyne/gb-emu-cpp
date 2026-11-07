@@ -18,6 +18,14 @@ uint16_t ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 bool ram_enabled = false;
 bool rom_ram_mode_select = false;
 
+void memory_bus_reset() {
+	rom_bank_number = 1; // Default to bank 1 for MBC1 and MBC3
+	mbc1_bank2 = 0; // Used for MBC1
+	ram_bank_number = 0; // Used as a selector not just bank number in MBC3
+	ram_enabled = false;
+	rom_ram_mode_select = false;
+}
+
 uint8_t memory_bus_read(const uint16_t addr) 
 {
 

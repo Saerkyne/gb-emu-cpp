@@ -23,3 +23,4 @@ void rtc_latch_write(const uint8_t value); // handles writes to the latch regist
 void rtc_catch_up(const uint64_t seconds); // catches up the RTC registers by the specified number of seconds, handling overflow and day counter wraparound
 void rtc_create_save_bytes(const uint64_t utc_timestamp); // creates a byte array representing the current state of the RTC registers for saving to a file
 uint64_t rtc_load_save_bytes(const uint64_t utc_timestamp, const uint8_t footer_length); // loads the RTC registers from a byte array representing the saved state of the RTC registers
+void rtc_reset(); // reset RTC registers to zero and reset other counters and flags
