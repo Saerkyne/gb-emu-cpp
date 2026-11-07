@@ -6,7 +6,7 @@
 
 bool log_to_console = true;
 bool log_to_file = true;
-static FILE* logfile = NULL;
+static SDL_IOStream* logfile = NULL;
 
 void debug_log(const char* fmt, ...) {
 	va_list args;
@@ -26,7 +26,7 @@ void debug_log(const char* fmt, ...) {
 			SDL_CreateDirectory(log_dir.c_str()); // Also succeeds when the folder already exists
 			const std::string log_path = log_dir + "/logfile.txt";
 
-			logfile = fopen(log_path.c_str(), "w");
+			logfile = SDL_IOFromFile(log_path.c_str(), "w");
 			if (!logfile) {
 				printf("Failed to open %s for writing!\n", log_path.c_str());
 				log_to_file = false;
@@ -34,7 +34,7 @@ void debug_log(const char* fmt, ...) {
 			}
 		}
 		va_start(args, fmt);
-		vfprintf(logfile, fmt, args);
+		SDL_IOvprintf(logfile, fmt, args);
 		va_end(args);
 	}
 }
@@ -42,7 +42,7 @@ void debug_log(const char* fmt, ...) {
 void debug_log_close_file() {
 	if (logfile) {
 		log_to_file = false;
-		fclose(logfile);
+		SDL_CloseIO(logfile);
 		logfile = NULL;
 	}
 }

@@ -6,8 +6,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
-#include <fstream>
+#include <string>
 
 char runtime_path_buffer[CART_MAX_PATH]; // Buffer to hold the runtime path
 char rom_filename_buffer[CART_MAX_PATH]; // Buffer to hold the ROM filename
@@ -54,26 +53,53 @@ void cart_print_info() {
 
 // Loads a Game Boy ROM from the specified filename into the cartridge_data buffer. Returns true if successful, false otherwise.
 bool cart_load(const char* filename) {
-	std::streampos size;
-	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
-	if (file.is_open()) {
-		size = file.tellg(); // Get the size of the file
-		file.seekg(0, std::ios::beg); // Move to the beginning of the file
-		file.read((char*)cartridge_data, MAX_CART_SIZE); // Read the file into the cartridge_data buffer
-		file.close();
-		cart_type_info cart_info = cart_type_data[cartridge_header->cartridge_type];
-		if (size > MAX_CART_SIZE) 
+	SDL_IOStream* file = SDL_IOFromFile(filename, "rb"); // SDL takes UTF-8 paths on every platform, including Windows
+	if (file == NULL) 
+	{
+		printf("Failed to load ROM %s: %s\n", filename, SDL_GetError());
+		return false;
+	}
+
+	const Sint64 size = SDL_GetIOSize(file); // Size of the file in bytes, or -1 if it cannot be determined
+	if (size < 0)
+	{
+		printf("Failed to read the size of ROM %s: %s\n", filename, SDL_GetError());
+		SDL_CloseIO(file);
+		return false;
+	}
+
+	if (size > MAX_CART_SIZE)
+	{
+		// Checked before reading, so an oversized file never touches cartridge_data
+		printf("Warning: ROM size exceeds the maximum cartridge size of %d bytes. The ROM was not loaded.\n", MAX_CART_SIZE);
+		SDL_CloseIO(file);
+		return false;
+	}
+
+	const size_t bytes_read = SDL_ReadIO(file, cartridge_data, (size_t)size); // Read the file into the cartridge_data buffer
+	SDL_CloseIO(file); // Close the file
+
+	if (bytes_read != (size_t)size) {
+		printf("Failed to read ROM %s: %s\n", filename, SDL_GetError());
+		return false;
+	}
+
+	cart_type_info cart_info = cart_type_data[cartridge_header->cartridge_type];
+	switch (cart_info.type)
+	{
+	case CART_TYPE::NO_MBC:
+		if (cart_info.has_battery && cart_info.has_ram)
 		{
-			printf("Warning: ROM size exceeds maximum cartridge size. Only the first %d bytes would be loaded.\n", MAX_CART_SIZE);
-			return false;
+			cart_supports_saves = true;
 		}
-		if (cart_info.type == CART_TYPE::MBC1)
+		break;
+	case CART_TYPE::MBC1:
+		if (cart_info.has_battery && cart_info.has_ram)
 		{
-			if (cart_info.has_battery && cart_info.has_ram)
-			{
-				cart_supports_saves = true;
-			}
+			cart_supports_saves = true;
 		}
+		break;
+	case CART_TYPE::MBC3:
 		if (cart_info.type == CART_TYPE::MBC3)
 		{
 			if (!(cartridge_header->ram_size >= 0x00 && cartridge_header->ram_size <= 0x03))
@@ -95,21 +121,22 @@ bool cart_load(const char* filename) {
 				rtc_init();
 			}
 		}
-
-		if (cart_supports_saves)
-		{
-			cart_check_save(filename); // Check if a save file exists for this ROM and load it into ERAM if it does
-		}
-
-		strncpy(rom_filename_buffer, filename, CART_MAX_PATH - 1); // Store the ROM filename
-		rom_filename_buffer[CART_MAX_PATH - 1] = '\0'; // strncpy doesn't terminate when the source fills the buffer
-		cartridge_loaded = true;
-
-		printf("ROM %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
-		return true;
+		break;
+	default:
+		break;
 	}
-	printf("Failed to load ROM %s\n", filename);
-	return false;
+
+	if (cart_supports_saves)
+	{
+		cart_check_save(filename); // Check if a save file exists for this ROM and load it into ERAM if it does
+	}
+
+	strncpy(rom_filename_buffer, filename, CART_MAX_PATH - 1); // Store the ROM filename
+	rom_filename_buffer[CART_MAX_PATH - 1] = '\0'; // strncpy doesn't terminate when the source fills the buffer
+	cartridge_loaded = true;
+
+	printf("ROM %s loaded, size: %lld bytes\n", filename, (long long)size);
+	return true;
 }
 
 bool cart_check_save(const char* rom_filename) {
@@ -169,6 +196,7 @@ bool cart_check_save(const char* rom_filename) {
 			else
 			{
 				printf("No save found for ROM %s.\n", rom_filename);
+				return false;
 			}
 		}
 		printf("ROM %s has a bank count of 0 and no RTC, which means no save data.\n", rom_filename);
@@ -182,13 +210,16 @@ bool cart_check_save(const char* rom_filename) {
 }
 
 bool cart_open_save_file(const char* filename) {
-	std::streampos size;
-	std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
-	if (file.is_open()) {
-		size = file.tellg(); // Get the size of the file
-		file.seekg(0, std::ios::beg); // Move to the beginning of the file
-		file.read((char*)save_data, ERAM_SIZE); // Read the file into the save_data buffer
-		file.close();
+	SDL_IOStream* file = SDL_IOFromFile(filename, "rb"); // SDL takes UTF-8 paths on every platform, including Windows
+	if (file != NULL) {
+		const Sint64 size = SDL_GetIOSize(file); // Size of the file in bytes, or -1 if it can't be determined
+		const size_t bytes_expected = (size >= 0 && size < (Sint64)ERAM_SIZE) ? (size_t)size : ERAM_SIZE;
+		const size_t bytes_read = SDL_ReadIO(file, save_data, bytes_expected); // Read the file into the save_data buffer
+		SDL_CloseIO(file);
+		if (size < 0 || bytes_read != bytes_expected) {
+			printf("Failed to read save file %s: %s\n", filename, SDL_GetError());
+			return false;
+		}
 		uint8_t footer_length = 0; // Initialize footer length to 0
 		if (size < save_size)
 		{
@@ -224,7 +255,7 @@ bool cart_open_save_file(const char* filename) {
 				rtc_catch_up(seconds_to_catch_up); // Catch up the RTC registers by the difference in seconds
 			}
 		}
-		printf("Save file %s loaded, size: %lli bytes\n", filename, std::streamoff(size));
+		printf("Save file %s loaded, size: %lld bytes\n", filename, (long long)size);
 		return true;
 	}
 	else
@@ -244,68 +275,46 @@ bool cart_save_to_file(const char* filename) {
 		printf("Cartridge does not support saves.\n");
 		return false;
 	}
-	// Check for existing save, if so, rename to .bak
-	std::ifstream existing_save(filename);
-	if (existing_save)
+		// Keep the previous save as a .bak. SDL_RenamePath replaces an existing backup on
+	// every platform, so the old backup doesn't need to be removed first.
+	if (SDL_GetPathInfo(filename, NULL)) // True when something already exists at this path
 	{
-		std::string backup_filename = std::string(filename) + ".bak";
-		existing_save.close();
-		// Check for existing backup and remove it if it exists
-		std::ifstream existing_backup(backup_filename);
-		if (existing_backup)
-		{
-			existing_backup.close();
-			if (std::remove(backup_filename.c_str()) != 0)
-			{
-				printf("Warning: Failed to remove existing backup save file %s.\n", backup_filename.c_str());
-			}
-			else
-			{
-				printf("Existing backup save file %s removed.\n", backup_filename.c_str());
-			}
-		}
-		if (std::rename(filename, backup_filename.c_str()) != 0)
-		{
-			printf("Warning: Failed to create backup of existing save file %s.\n", filename);
-		} 
-		else 
+		const std::string backup_filename = std::string(filename) + ".bak";
+		if (SDL_RenamePath(filename, backup_filename.c_str()))
 		{
 			printf("Existing save file %s renamed to %s.\n", filename, backup_filename.c_str());
 		}
-	}
-	std::ofstream file(filename, std::ios::out | std::ios::binary);
-	if (file.is_open()) {
-		file.write((const char*)eram, save_size);
-		if (cart_has_rtc)
-		{
-			uint64_t utc_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // Get the current UTC timestamp
-			rtc_create_save_bytes(utc_timestamp); // Create the RTC save bytes
-			file.write((const char*)rtc_save_bytes, sizeof(rtc_save_bytes)); // Write the RTC save bytes to the file
-		}
-		file.close();
-		std::ifstream verify_file(filename, std::ios::in | std::ios::binary);
-
-		if (cart_has_rtc)
-		{
-			if (verify_file.seekg(0, std::ios::end).tellg() != (save_size + 48))
-			{
-				printf("Warning: Save file %s size does not match expected size (%u bytes + 48 bytes for RTC).\n", filename, save_size);
-				return false;
-			}
-		}
 		else
 		{
-			if (verify_file.seekg(0, std::ios::end).tellg() != save_size) {
-				printf("Warning: Save file %s size does not match expected size (%u bytes).\n", filename, save_size);
-				return false;
-			}
+			printf("Warning: Failed to create backup of existing save file %s: %s\n", filename, SDL_GetError());
 		}
-		
-		verify_file.close();
-		printf("Save file %s saved, size: %u bytes\n", filename, save_size);
-		return true;
-	} else {
-		printf("Failed to open save file %s for writing.\n", filename);
+	}
+
+	SDL_IOStream* file = SDL_IOFromFile(filename, "wb");
+	if (file == NULL) {
+		printf("Failed to open save file %s for writing: %s\n", filename, SDL_GetError());
 		return false;
 	}
+
+	uint32_t expected_size = save_size;
+	bool write_ok = SDL_WriteIO(file, eram, save_size) == save_size;
+	if (cart_has_rtc)
+	{
+		uint64_t utc_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // Get the current UTC timestamp
+		rtc_create_save_bytes(utc_timestamp); // Create the RTC save bytes
+		write_ok = (SDL_WriteIO(file, rtc_save_bytes, sizeof(rtc_save_bytes)) == sizeof(rtc_save_bytes)) && write_ok; // Write the RTC save bytes to the file
+		expected_size += sizeof(rtc_save_bytes);
+	}
+	const bool closed_ok = SDL_CloseIO(file); // Closing flushes the data, so it can fail too
+
+	// Confirm what actually landed on disk
+	SDL_PathInfo info;
+	if (!write_ok || !closed_ok || !SDL_GetPathInfo(filename, &info) || info.size != expected_size)
+	{
+		printf("Warning: Save file %s was not written correctly (expected %u bytes): %s\n", filename, expected_size, SDL_GetError());
+		return false;
+	}
+
+	printf("Save file %s saved, size: %u bytes\n", filename, expected_size);
+	return true;
 }
