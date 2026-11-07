@@ -22,6 +22,7 @@ std::chrono::steady_clock::time_point core_time_frame_begin;
 
 static char core_requested_rom_path[CART_MAX_PATH]; // Path of the ROM waiting to be loaded
 static bool core_rom_load_pending = false; // Set by core_request_rom_load, cleared by core_handle_rom_request
+static int core_files_in_current_drop = 0; // SDL_EVENT_DROP_FILE events seen since the last SDL_EVENT_DROP_BEGIN
 
 void core_init_gfx_contexts();
 void core_on_key_press(SDL_Scancode sym, bool down);
@@ -82,15 +83,6 @@ void core_on_frame()
 {
 	core_poll_events();
 
-	if (gfx_debug_ctx->window)
-	{
-		if (SDL_PollEvent(&gfx_debug_ctx->event) &&
-			gfx_debug_ctx->event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-		{
-			core_quit_requested = true;
-		}
-	}
-
 	auto time_frame_end = std::chrono::steady_clock::now();
 	auto time_elapsed = time_frame_end - core_time_frame_begin;
 	auto sleep_time = std::chrono::nanoseconds((CPU_FRAME_TIME_NS) - time_elapsed.count());
@@ -138,6 +130,25 @@ void core_poll_events()
 		case SDL_EVENT_QUIT:
 			core_quit_requested = true;
 			break;
+		case SDL_EVENT_DROP_BEGIN: // A drag-and-drop operation has started; reset the counter for this operation
+			core_files_in_current_drop = 0; // Reset the counter for this drop operation
+			break;
+		case SDL_EVENT_DROP_FILE: // One file per event; several files arrive as several events
+			core_files_in_current_drop++;
+			if (core_files_in_current_drop == 1) // Only load the first file in a multi-file drop
+			{
+				core_request_rom_load(gfx_render_ctx->event.drop.data); // Copies the path, with SDL frees after the event is processed
+			}
+			break;
+		case SDL_EVENT_DROP_COMPLETE:
+			if (core_files_in_current_drop > 1)
+			{
+				printf("Warning: %d files were dropped, but only the first one was loaded.\n", core_files_in_current_drop);
+			}
+			core_files_in_current_drop = 0; // Reset the counter for this drop operation
+			break;
+		default:
+			break;
 		}
 	}
 }
@@ -145,6 +156,13 @@ void core_poll_events()
 void core_handle_rom_request()
 {
 	core_rom_load_pending = false; 
+	if (cartridge_loaded) 
+	{
+		// Temporary: replacing a running game needs the old game saved and the cartridge
+		// state reset first. Until that exists, running game stays.
+		printf("A game is already running, please close it before loading a new one.\n");
+		return;
+	}
 
 	if (!cart_load(core_requested_rom_path))
 	{
