@@ -168,7 +168,7 @@ void core_handle_rom_request()
 	memory_bus_reset(); // MBC registers
 	rtc_reset(); // Must come before cart_load, which can start the clock and load it from the save file
 	core_clock_counter = 0; // Reset the global clock counter to zero, so the new cartridge starts at time zero
-	timer_reset();
+	
 	joypad_reset();
 
 	if (!cart_load(core_requested_rom_path))

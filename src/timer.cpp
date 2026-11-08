@@ -16,14 +16,6 @@ void timer_init() {
     timer_registers->timer_tac = 0;
     timer_registers->timer_tima = 0;
     timer_registers->timer_tma = 0;
-}
-
-void timer_reset() {
-    timer_internal_sysclk = 0xABCC;
-    timer_registers->timer_div = 0xAB;
-    timer_registers->timer_tac = 0;
-    timer_registers->timer_tima = 0;
-    timer_registers->timer_tma = 0;
     timer_interrupt_delay = 0;
 }
 

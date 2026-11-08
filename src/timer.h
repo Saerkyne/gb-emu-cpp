@@ -15,4 +15,3 @@ void timer_init();
 void timer_advance_clocks(const uint8_t cycles);
 void timer_on_div_write(const uint8_t _value);
 void timer_tick_tima();
-void timer_reset();

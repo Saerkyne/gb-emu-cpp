@@ -97,6 +97,24 @@ void ppu_reset()
 	ppu_lcd_registers->wy = 0;
 	ppu_scanline_dot = 0;
 	ppu_first_frame_after_lcd_enable = false;
+
+	ppu_fetcher_reset();
+
+	ppu_oam_search_index = 0;
+	ppu_oam_buffer_count = 0;
+	for (int i = 0; i < 10; i++) {
+		ppu_oam_buffer[i] = { 0, false };
+	}
+	ppu_oam_sprite_fetcher_index = 0;
+
+	ppu_shifter_pixel_x = 0;
+	ppu_discard_pixels = 0;
+	ppu_fetcher_first_scanline_steps = false;
+	for (int i = 0; i < 8; i++) {
+		ppu_pixel_buffer[i] = 0;
+	}
+	
+	
 }
 
 void ppu_advance_clocks(const uint8_t clocks)
@@ -283,8 +301,8 @@ void ppu_on_lcd_status_write(const uint8_t value)
 void ppu_on_palette_write(const uint16_t addr)
 {
 	if (addr == 0xFF47) extract_palette(addr, background_palette);
-	if (addr == 0xFF48) extract_palette(addr, background_palette);
-	if (addr == 0xFF49) extract_palette(addr, background_palette);
+	if (addr == 0xFF48) extract_palette(addr, sprite_palette_0);
+	if (addr == 0xFF49) extract_palette(addr, sprite_palette_1);
 }
 
 void render_frame()
