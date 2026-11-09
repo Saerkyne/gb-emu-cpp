@@ -31,7 +31,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 
 	const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
 
-	if (addr >= 0x0000 && addr <= 0x3FFF) // Read from ROM bank 00
+	if (addr <= 0x3FFF) // Read from ROM bank 00
 	{
 		if (cart_info.type == CART_TYPE::NO_MBC)
 		{
@@ -156,7 +156,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 				{
 					return 0xFF; // Unused RAM size code, return 0xFF
 				}
-				else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07) // Functions as a selector, not a RAM bank value
+				else if (ram_bank_number <= 0x07) // Functions as a selector, not a RAM bank value
 				{
 					const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
 					uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
@@ -231,7 +231,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 	const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
 	if (cart_info.type == CART_TYPE::MBC1) 
 	{
-		if (addr >= 0x0000 && addr <= 0x1FFF) // RAM Enable
+		if (addr <= 0x1FFF) // RAM Enable
 		{
 			// When 0x0A (0b1010) is written to this register, enable RAM chip access.
 			// When anything else is written, disable RAM chip access.
@@ -265,7 +265,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 	if (cart_info.type == CART_TYPE::MBC3)
 	{
-		if (addr >= 0x0000 && addr <= 0x1FFF) // RAM and Timer Enable
+		if (addr <= 0x1FFF) // RAM and Timer Enable
 		{
 			ram_enabled = (value & 0x0F) == 0x0A;
 		}
@@ -354,7 +354,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 					rtc_register_write(ram_bank_number, value);
 				}
 			}
-			else if (ram_bank_number >= 0x00 && ram_bank_number <= 0x07) // Functions as a selector, not a RAM bank value
+			else if (ram_bank_number <= 0x07) // Functions as a selector, not a RAM bank value
 			{
 				if (cartridge_header->ram_size < sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) // Check that the cartridge RAM size is within the bounds of the cart_ram_size array
 				{
@@ -425,7 +425,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		} 
 		else if (addr == 0xFF04) // Timer DIV
 		{
-			timer_on_div_write(value);
+			timer_on_div_write(); // Was previously taking "value" as a parameter.
 		} 
 		else if (addr == 0xFF07) // Timer control
 		{

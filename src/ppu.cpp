@@ -407,7 +407,7 @@ void ppu_oam_search_tick()
 	{
 		return;
 	}
-	const uint8_t* tile_data = memory + 0x8000;
+	// const uint8_t* tile_data = memory + 0x8000;
 	const uint8_t* oam_sprite_data = memory + OBJECT_ATTRIBUTE_ADDRESS;
 	const uint8_t sprite_height = LCDC_SPRITE_SIZE ? 16 : 8;
 	const uint8_t attribute_data_index = ppu_oam_search_index * 4;

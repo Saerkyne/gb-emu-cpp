@@ -1,73 +1,74 @@
 #pragma once
 #include <stdint.h>
 
-#define SET_FLAG_ZERO(value)		cpu_registers.f = (cpu_registers.f & ~(1UL << 7)) | ((value) << 7);
+#define SET_FLAG_ZERO(value)		cpu_registers.af_bytes.f = (cpu_registers.af_bytes.f & ~(1UL << 7)) | ((value) << 7);
 // OLD (kept for reference): #define GET_FLAG_ZERO				((cpu_registers.f & ~(1UL << 7)) >> 7)
-#define GET_FLAG_ZERO				((cpu_registers.f & (1UL << 7)) >> 7)
+#define GET_FLAG_ZERO				((cpu_registers.af_bytes.f & (1UL << 7)) >> 7)
 
-#define SET_FLAG_SUBTRACT(value)	cpu_registers.f = (cpu_registers.f & ~(1UL << 6)) | ((value) << 6);
+#define SET_FLAG_SUBTRACT(value)	cpu_registers.af_bytes.f = (cpu_registers.af_bytes.f & ~(1UL << 6)) | ((value) << 6);
 // OLD (kept for reference): #define GET_FLAG_SUBTRACT			((cpu_registers.f & ~(1UL << 6)) >> 6)
-#define GET_FLAG_SUBTRACT			((cpu_registers.f & (1UL << 6)) >> 6)
+#define GET_FLAG_SUBTRACT			((cpu_registers.af_bytes.f & (1UL << 6)) >> 6)
 
-#define SET_FLAG_HALF_CARRY(value)	cpu_registers.f = (cpu_registers.f & ~(1UL << 5)) | ((value) << 5);
+#define SET_FLAG_HALF_CARRY(value)	cpu_registers.af_bytes.f = (cpu_registers.af_bytes.f & ~(1UL << 5)) | ((value) << 5);
 // OLD (kept for reference): #define GET_FLAG_HALF_CARRY			((cpu_registers.f & ~(1UL << 5)) >> 5)
-#define GET_FLAG_HALF_CARRY			((cpu_registers.f & (1UL << 5)) >> 5)
+#define GET_FLAG_HALF_CARRY			((cpu_registers.af_bytes.f & (1UL << 5)) >> 5)
 
-#define SET_FLAG_CARRY(value)		cpu_registers.f = (cpu_registers.f & ~(1UL << 4)) | ((value) << 4);
+#define SET_FLAG_CARRY(value)		cpu_registers.af_bytes.f = (cpu_registers.af_bytes.f & ~(1UL << 4)) | ((value) << 4);
 // OLD (kept for reference): #define GET_FLAG_CARRY				((cpu_registers.f & ~(1UL << 4)) >> 4)
-#define GET_FLAG_CARRY				((cpu_registers.f & (1UL << 4)) >> 4)
+#define GET_FLAG_CARRY				((cpu_registers.af_bytes.f & (1UL << 4)) >> 4)
 
 
 
 struct gb_cpu_registers {
-	struct {
-		union {
-			struct {
-				uint8_t f; // Flags
-				uint8_t a; // Accumulator
-			};
-			uint16_t af; // AF register pair
-		};
+
+	struct af_bytes_struct {
+		uint8_t f; // Flags
+		uint8_t a; // Accumulator
 	};
 
-	struct {
-		union {
-			struct {
-				uint8_t c; // General purpose register C
-				uint8_t b; // General purpose register B
-			};
-			uint16_t bc; // BC register pair
-		};
+	struct bc_bytes_struct {
+		uint8_t c; // General purpose register C
+		uint8_t b; // General purpose register B
 	};
 
-	struct {
-		union {
-			struct {
-				uint8_t e; // General purpose register E
-				uint8_t d; // General purpose register D
-			};
-			uint16_t de; // DE register pair
-		};
+	struct de_bytes_struct {
+		uint8_t e; // General purpose register E
+		uint8_t d; // General purpose register D
 	};
 
-	struct {
-		union {
-			struct {
-				uint8_t l; // General purpose register L
-				uint8_t h; // General purpose register H
-			};
-			uint16_t hl; // HL register pair
-		};
+	struct hl_bytes_struct {
+		uint8_t l; // General purpose register L
+		uint8_t h; // General purpose register H
 	};
 
-	struct {
-		union {
-			struct {
-				uint8_t p;
-				uint8_t s;
-			};
-			uint16_t sp; // Stack Pointer
-		};
+	struct sp_bytes_struct {
+		uint8_t p; // Stack Pointer low byte
+		uint8_t s; // Stack Pointer high byte
+	};
+
+	union {
+		af_bytes_struct af_bytes;
+		uint16_t af; // AF register pair
+	};
+
+	union {
+		bc_bytes_struct bc_bytes;
+		uint16_t bc; // BC register pair
+	};
+
+	union {
+		de_bytes_struct de_bytes;
+		uint16_t de; // DE register pair
+	};
+
+	union {
+		hl_bytes_struct hl_bytes;
+		uint16_t hl; // HL register pair
+	};
+
+	union {
+		sp_bytes_struct sp_bytes;
+		uint16_t sp; // Stack Pointer
 	};
 
 	uint16_t pc; // Program Counter
@@ -76,6 +77,7 @@ struct gb_cpu_registers {
 typedef void(*cpu_execute_op)(); // Function pointer type for CPU instruction execution
 
 extern gb_cpu_registers cpu_registers; // Global instance of CPU registers
+
 
 void cpu_reset();
 void cpu_tick();
