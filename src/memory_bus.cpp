@@ -209,6 +209,12 @@ uint8_t memory_bus_read(const uint16_t addr)
 		{
 			return joypad_read_input();	
 		}
+
+		if (addr == 0xFF4C || addr == 0xFF4D) // Game Boy Color KEY0 and KEY1 registers (not implemented)
+		{
+			return 0xFF; // Return 0xFF for unimplemented registers
+		}
+
 		return memory[addr];
 	}
 
