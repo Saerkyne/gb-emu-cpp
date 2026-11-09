@@ -174,6 +174,12 @@ bool cart_load(const char* filename) {
 			cart_supports_saves = true;
 		}
 		break;
+	case CART_TYPE::MBC2:
+		if (cart_info.has_battery)
+		{
+			cart_supports_saves = true;
+		}
+		break;
 	case CART_TYPE::MBC3:
 		if (cart_info.type == CART_TYPE::MBC3)
 		{

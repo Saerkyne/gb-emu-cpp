@@ -46,6 +46,10 @@ uint8_t memory_bus_read(const uint16_t addr)
 			}
 			return cartridge_data[addr]; // For MBC1, bank 00 is always accessible
 		}
+		else if (cart_info.type == CART_TYPE::MBC2)
+		{
+			return cartridge_data[addr]; // For MBC2, bank 00 is always accessible
+		}
 		else if (cart_info.type == CART_TYPE::MBC3)
 		{
 			return cartridge_data[addr]; // For MBC3, bank 00 is always accessible
@@ -65,6 +69,15 @@ uint8_t memory_bus_read(const uint16_t addr)
 		{
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
 			uint8_t rom_bank = ((mbc1_bank2 << 5) | rom_bank_number) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
+			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
+			const uint32_t rom_address = bank_offset + (addr - 0x4000);
+			return cartridge_data[rom_address];
+		}
+		else if (cart_info.type == CART_TYPE::MBC2)
+		{
+			// same as MBC1, but with only 16 ROM banks supported
+			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
+			uint8_t rom_bank = rom_bank_number & 0x0F; // MBC2 supports only 16 ROM banks (0x00 to 0x0F)
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
 			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
@@ -127,6 +140,23 @@ uint8_t memory_bus_read(const uint16_t addr)
 			{
 				const uint32_t eram_address = (addr - 0xA000);
 				return eram[eram_address];
+			}
+		}
+		else if (cart_info.type == CART_TYPE::MBC2)
+		{
+			if (!ram_enabled)
+			{
+				return 0xFF; // RAM is disabled, return 0xFF
+			}
+			if (addr >= 0xA000 && addr <= 0xA1FF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF)
+			{
+				const uint16_t eram_address = (addr - 0xA000);
+				return eram[eram_address] & 0x0F; // Only the lower 4 bits are used for MBC2 RAM
+			}
+			if (addr >= 0xA200 && addr <= 0xBFFF) // MBC2 "echoes" 0xA000 - 0xA1FF to 0xA200 - 0xBFFF, but only the lower 4 bits are used
+			{
+				const uint16_t eram_address = (addr - 0xA200) % 0x0200; // Wrap around to 0xA000 - 0xA1FF
+				return eram[eram_address] & 0x0F; // Only the lower 4 bits are used for MBC2 RAM
 			}
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
@@ -266,6 +296,25 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		if (addr >= 0x6000 && addr <= 0x7FFF) 
 		{
 			rom_ram_mode_select = value & 1; // This is a 1-bit register
+		}
+	}
+
+	if (cart_info.type == CART_TYPE::MBC2)
+	{
+		if (addr <= 0x3FFF)
+		{
+			if (addr & 0x0100) // Check if the 9th bit is set
+			{
+				rom_bank_number = value & 0x0F; // Only the lower 4 bits are used for MBC2 ROM bank number
+				if (rom_bank_number == 0)
+				{
+					rom_bank_number = 1; // Bank 0 is not accessible, default to bank 1
+				}
+			}
+			else
+			{
+				ram_enabled = (value & 0x0F) == 0x0A; // Only the lower 4 bits are used for RAM enable
+			}
 		}
 	}
 
