@@ -20,7 +20,8 @@ cart_header_struct* cartridge_header = (cart_header_struct*)(cartridge_data + 0x
 
 
 // Helper function to get path of currently running emulator
-bool get_runtime_path() {
+/*
+static bool get_runtime_path() {
 	const char* base_path = SDL_GetBasePath();
 	if (base_path == NULL) {
 		return false;
@@ -28,7 +29,7 @@ bool get_runtime_path() {
 	strncpy(runtime_path_buffer, base_path, CART_MAX_PATH);
 	return true;
 }
-
+*/
 void cart_unload() {
 	if ((cartridge_loaded && cart_supports_saves) && !test_mode)
 	{
@@ -313,12 +314,12 @@ bool cart_open_save_file(const char* filename) {
 			printf("Warning: Save file size is smaller than expected save size (%u bytes).\n", save_size);
 			return false;
 		}
-		else if (size == (save_size + 44) && cart_has_rtc)
+		else if (size == ((Sint64)save_size + 44) && cart_has_rtc)
 		{
 			printf("Save has a 44 byte footer.\n");
 			footer_length = 44;
 		}
-		else if (size == (save_size + 48) && cart_has_rtc)
+		else if (size == ((Sint64)save_size + 48) && cart_has_rtc)
 		{
 			printf("Save has a 48 byte footer.\n");
 			footer_length = 48;
