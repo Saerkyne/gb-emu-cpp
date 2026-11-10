@@ -345,8 +345,8 @@
 	core_advance_cpu_clocks(4);												\
 	SET_FLAG_SUBTRACT(0);													\
 	SET_FLAG_HALF_CARRY(1);													\
-	core_advance_cpu_clocks(4);												\
 	SET_FLAG_ZERO((memory_bus_read(cpu_registers.hl) & (1 << bitn)) == 0);	\
+	core_advance_cpu_clocks(4);												\
 }
 
 #define cpu_routine_res_n_8(bitn, reg8) {									\
