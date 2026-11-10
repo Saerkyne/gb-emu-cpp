@@ -12,6 +12,12 @@
 #include <cstring>
 #include <thread>
 
+// Test Mode Block
+bool test_mode = false;
+int core_exit_code = CORE_EXIT_OK; // Exit code for the emulator core, used in test mode
+const uint32_t CORE_TEST_CLOCK_LIMIT = 41194304u * 120u; // 120 seconds at 41,194,304 Hz
+// End Test Mode Block
+
 const uint32_t CPU_FRAME_TIME_NS = 1.0 / 60.0 * 1000000000;
 gfx_context* gfx_debug_ctx = nullptr;
 gfx_context* gfx_render_ctx = nullptr;
@@ -60,7 +66,23 @@ void core_run()
 		if (cartridge_loaded) 
 		{
 			cpu_tick();
+
+			// Test Mode Block
+			if (test_mode && core_clock_counter >= CORE_TEST_CLOCK_LIMIT)
+			{
+				printf("NO RESULT (timed out)\n");
+				core_quit_requested = true; 
+			}
+			// End Test Mode Block
 		}
+		// Test Mode Block
+		else if (test_mode)
+		{
+			printf("NO ROM\n");
+			core_exit_code = CORE_EXIT_NO_ROM;
+			core_quit_requested = true;
+		}
+		// End Test Mode Block
 		else 
 		{
 			core_idle();
@@ -82,6 +104,12 @@ void core_shutdown()
 void core_on_frame()
 {
 	core_poll_events();
+	// Test Mode Block
+	if (test_mode)
+	{
+		return; // In test mode, we don't want to sleep or wait for the next frame
+	}
+	// End Test Mode Block
 
 	auto time_frame_end = std::chrono::steady_clock::now();
 	auto time_elapsed = time_frame_end - core_time_frame_begin;
@@ -278,3 +306,16 @@ void core_sleep_until(std::chrono::steady_clock::time_point targetTime)
 		std::this_thread::yield();
 	}
 }
+
+// Test Mode Block
+void core_report_test_result(bool passed)
+{
+	if (core_quit_requested)
+	{
+		return; // Don't overwrite the exit code if the user requested a quit. Mooneye tests execute LD B,B twice; only first set counts
+	}
+	printf("%s\n", passed ? "PASS" : "FAIL");
+	core_exit_code = passed ? CORE_EXIT_OK : CORE_EXIT_TEST_FAILED;
+	core_quit_requested = true;
+}
+// End Test Mode Block

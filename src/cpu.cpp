@@ -485,15 +485,19 @@ void cpu_ccf() { // 0x3F
 }
 
 void cpu_ld_b_b() { // 0x40
+	// Test Mode Block
 	if (test_mode)
 	{
-		printf("Actual Register B: %d Expected: 3\n", cpu_registers.bc_bytes.b);
-		printf("Actual Register C: %d Expected: 5\n", cpu_registers.bc_bytes.c);
-		printf("Actual Register D: %d Expected: 8\n", cpu_registers.de_bytes.d);
-		printf("Actual Register E: %d Expected: 13\n", cpu_registers.de_bytes.e);
-		printf("Actual Register H: %d Expected: 21\n", cpu_registers.hl_bytes.h);
-		printf("Actual Register L: %d Expected: 34\n", cpu_registers.hl_bytes.l);
+		const bool passed =
+			cpu_registers.bc_bytes.b == 3 &&
+			cpu_registers.bc_bytes.c == 5 &&
+			cpu_registers.de_bytes.d == 8 &&
+			cpu_registers.de_bytes.e == 13 &&
+			cpu_registers.hl_bytes.h == 21 &&
+			cpu_registers.hl_bytes.l == 34;
+		core_report_test_result(passed);
 	}
+	// End Test Mode Block
 	core_advance_cpu_clocks(4); // No action, but wait 4 clock cycles
 }
 

@@ -1,11 +1,11 @@
 #include "cart.h"
 #include "cart_type.h"
+#include "emulator_core.h"
 #include "memory_bus.h"
 #include "rtc.h"
 #include <SDL3/SDL.h>
 #include <chrono>
 #include <cstdio>
-#include <cstring>
 #include <string>
 
 char runtime_path_buffer[CART_MAX_PATH]; // Buffer to hold the runtime path
@@ -30,7 +30,7 @@ bool get_runtime_path() {
 }
 
 void cart_unload() {
-	if (cartridge_loaded && cart_supports_saves)
+	if ((cartridge_loaded && cart_supports_saves) && !test_mode)
 	{
 		cart_save_to_file(save_filename_buffer); // Uses save_size and save_filename_buffer, so it runs before they are cleared
 	}

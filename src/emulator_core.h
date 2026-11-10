@@ -5,7 +5,19 @@
 extern gfx_context* gfx_debug_ctx;
 extern gfx_context* gfx_render_ctx;
 extern uint32_t core_clock_counter; // Global clock counter for the emulator core
-extern bool test_mode; 
+
+// Test Mode block
+const int CORE_EXIT_OK = 0;
+const int CORE_EXIT_TEST_FAILED = 1;
+const int CORE_EXIT_TEST_NO_RESULT = 2;
+const int CORE_EXIT_NO_ROM = 3;
+const int CORE_EXIT_BAD_ARGS = 4;
+
+extern bool test_mode; // Flag to indicate if the emulator is running in test mode
+extern int core_exit_code; // Exit code for the emulator core, used in test mode
+
+void core_report_test_result(bool passed); // Reports the result of a test case, sets the exit code accordingly
+// End Test Mode Block
 
 int core_init(); // Initializes the emulator core
 void core_run(); // Runs the emulator core
