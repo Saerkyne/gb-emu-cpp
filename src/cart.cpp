@@ -247,7 +247,7 @@ bool cart_check_save(const char* rom_filename) {
 
 		if (cart_type_data[cartridge_header->cartridge_type].type == CART_TYPE::MBC2)
 		{
-			save_size = 256; // MBC2 has 512 x 4 bits of built-in RAM, which is 256 bytes
+			save_size = 512; // MBC2 has 512 x 4 bits of built-in RAM
 
 			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
 			{

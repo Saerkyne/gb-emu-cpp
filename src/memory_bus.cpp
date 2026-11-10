@@ -148,19 +148,10 @@ uint8_t memory_bus_read(const uint16_t addr)
 			{
 				return 0xFF; // RAM is disabled, return 0xFF
 			}
-			if (addr >= 0xA000 && addr <= 0xA1FF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF)
+			if (addr >= 0xA000 && addr <= 0xBFFF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF), the rest are echoes
 			{
-				uint16_t eram_address = (addr - 0xA000);
-				eram_address = eram_address & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
-				eram_address = eram_address | 0xF0; // MBC2 RAM is only 4 bits, so we need to mask the upper bits to 1
+				uint16_t eram_address = addr & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
 				return eram[eram_address]; 
-			}
-			if (addr >= 0xA200 && addr <= 0xBFFF) // MBC2 "echoes" 0xA000 - 0xA1FF to 0xA200 - 0xBFFF, but only the lower 4 bits are used
-			{
-				uint16_t eram_address = (addr - 0xA200) % 0x0200; 
-				eram_address = eram_address & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
-				eram_address = eram_address | 0xF0; // MBC2 RAM is only 4 bits, so we need to mask the upper bits to 1
-				return eram[eram_address];
 			}
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
@@ -404,11 +395,9 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			{
 				return; // RAM is disabled, ignore the write
 			}
-			if (addr >= 0xA000 && addr <= 0xA1FF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF)
+			if (addr >= 0xA000 && addr <= 0xBFFF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF), the rest are echoes
 			{
-				uint16_t eram_address = (addr - 0xA000);
-				eram_address = eram_address & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
-				eram_address = eram_address | 0xF0; // MBC2 RAM is only 4 bits, so we need to mask the upper bits to 1
+				uint16_t eram_address = addr & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
 				eram[eram_address] = value & 0x0F; // Only the lower 4 bits are used for MBC2 RAM
 			}
 		}
