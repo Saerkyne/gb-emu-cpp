@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "interrupts.h"
 #include "debug_log.h"
+#include <cstdio>
 
 gb_cpu_registers cpu_registers; // Global instance of CPU registers
 uint8_t cpu_current_op_code = 0; // Current operation code being executed
@@ -484,6 +485,15 @@ void cpu_ccf() { // 0x3F
 }
 
 void cpu_ld_b_b() { // 0x40
+	if (test_mode)
+	{
+		printf("Actual Register B: %d Expected: 3\n", cpu_registers.bc_bytes.b);
+		printf("Actual Register C: %d Expected: 5\n", cpu_registers.bc_bytes.c);
+		printf("Actual Register D: %d Expected: 8\n", cpu_registers.de_bytes.d);
+		printf("Actual Register E: %d Expected: 13\n", cpu_registers.de_bytes.e);
+		printf("Actual Register H: %d Expected: 21\n", cpu_registers.hl_bytes.h);
+		printf("Actual Register L: %d Expected: 34\n", cpu_registers.hl_bytes.l);
+	}
 	core_advance_cpu_clocks(4); // No action, but wait 4 clock cycles
 }
 
@@ -1825,6 +1835,7 @@ void cpu_cb_srl_hl() { // 0x3E
 	core_advance_cpu_clocks(4);
 	uint32_t temp = memory_bus_read(cpu_registers.hl);
 	core_advance_cpu_clocks(4);
+	SET_FLAG_SUBTRACT(0);
 	SET_FLAG_SUBTRACT(0);
 	SET_FLAG_HALF_CARRY(0);
 	SET_FLAG_CARRY((temp & 0x01) != 0);

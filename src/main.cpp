@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
@@ -11,17 +12,32 @@ int main(int argc, char* argv[])
 	{
 		return error;
 	}
+	test_mode = false;
 
-	// A path here comes from the command line, a ROM dropped on the executable, 
-	// or the "open with" context menu in the file explorer. If a path is provided, we will load it immediately.
-	if (argc > 1)
+	const char* arg;
+	const char* rompath = "/path/to/rom.gb";
+	for (int i = 1; i < argc; ++i)
 	{
-		if (argc > 2)
+		arg = argv[i];
+		if ((strcmp(arg,"-t")) || (strcmp(arg,"--test-mode")))
 		{
-			printf("Warning, %d files were given; loading the first one.\n", argc - 1);
+			test_mode = true;
 		}
-		core_request_rom_load(argv[1]);
+		if ((strcmp(arg,"-r")) || (strcmp(arg,"--rom")))
+		{
+			if (i + 1 < argc)
+			{
+				rompath = argv[i++];
+			}
+			else
+			{
+				printf("--rom requires a path argument.\n");
+				return(1);
+			}
+		}
 	}
+
+	core_request_rom_load(rompath);
 
 	core_run();
 

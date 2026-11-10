@@ -5,6 +5,7 @@
 extern gfx_context* gfx_debug_ctx;
 extern gfx_context* gfx_render_ctx;
 extern uint32_t core_clock_counter; // Global clock counter for the emulator core
+extern bool test_mode; 
 
 int core_init(); // Initializes the emulator core
 void core_run(); // Runs the emulator core
