@@ -48,7 +48,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 		}
 		else if (cart_info.type == CART_TYPE::MBC2)
 		{
-			return cartridge_data[addr]; // For MBC2, bank 00 is always accessible
+			return cartridge_data[addr]; 
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
 		{
@@ -151,7 +151,8 @@ uint8_t memory_bus_read(const uint16_t addr)
 			if (addr >= 0xA000 && addr <= 0xBFFF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF), the rest are echoes
 			{
 				uint16_t eram_address = addr & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
-				return eram[eram_address]; 
+				uint16_t value = eram[eram_address]; 
+				return value | 0xF0; // Return the lower 4 bits of the value, upper 4 bits are always 1
 			}
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
