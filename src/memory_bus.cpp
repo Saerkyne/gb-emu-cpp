@@ -19,7 +19,7 @@ bool ram_enabled = false;
 bool rom_ram_mode_select = false;
 
 void memory_bus_reset() {
-	rom_bank_number = 1; // Default to bank 1 for MBC1 and MBC3
+	rom_bank_number = 1; // Default to bank 1 for MBC1, MBC2, MBC3s
 	mbc1_bank2 = 0; // Used for MBC1
 	ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 	ram_enabled = false;
@@ -77,7 +77,7 @@ uint8_t memory_bus_read(const uint16_t addr)
 		{
 			// same as MBC1, but with only 16 ROM banks supported
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
-			uint8_t rom_bank = rom_bank_number & 0x0F; // MBC2 supports only 16 ROM banks (0x00 to 0x0F)
+			uint8_t rom_bank = rom_bank_number & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
 			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
@@ -150,13 +150,17 @@ uint8_t memory_bus_read(const uint16_t addr)
 			}
 			if (addr >= 0xA000 && addr <= 0xA1FF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF)
 			{
-				const uint16_t eram_address = (addr - 0xA000);
-				return eram[eram_address] & 0x0F; // Only the lower 4 bits are used for MBC2 RAM
+				uint16_t eram_address = (addr - 0xA000);
+				eram_address = eram_address & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
+				eram_address = eram_address | 0xF0; // MBC2 RAM is only 4 bits, so we need to mask the upper bits to 1
+				return eram[eram_address]; 
 			}
 			if (addr >= 0xA200 && addr <= 0xBFFF) // MBC2 "echoes" 0xA000 - 0xA1FF to 0xA200 - 0xBFFF, but only the lower 4 bits are used
 			{
-				const uint16_t eram_address = (addr - 0xA200) % 0x0200; // Wrap around to 0xA000 - 0xA1FF
-				return eram[eram_address] & 0x0F; // Only the lower 4 bits are used for MBC2 RAM
+				uint16_t eram_address = (addr - 0xA200) % 0x0200; 
+				eram_address = eram_address & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
+				eram_address = eram_address | 0xF0; // MBC2 RAM is only 4 bits, so we need to mask the upper bits to 1
+				return eram[eram_address];
 			}
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
@@ -316,6 +320,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 				ram_enabled = (value & 0x0F) == 0x0A; // Only the lower 4 bits are used for RAM enable
 			}
 		}
+		if (addr >= 0x4000 && addr <= 0x7FFF) // Unused address space
+		{
+			return; // Ignore writes to this range for MBC2
+		}
 	}
 
 	if (cart_info.type == CART_TYPE::MBC3)
@@ -386,10 +394,23 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			}
 			else
 			{
-				
 				eram[addr - 0xA000] = value;
 			}
 			
+		}
+		else if (cart_info.type == CART_TYPE::MBC2)
+		{
+			if (!ram_enabled)
+			{
+				return; // RAM is disabled, ignore the write
+			}
+			if (addr >= 0xA000 && addr <= 0xA1FF) // MBC2 has 512 x 4 bits of RAM (0xA000 - 0xA1FF)
+			{
+				uint16_t eram_address = (addr - 0xA000);
+				eram_address = eram_address & 0x1FF; // Wrap around to 0xA000 - 0xA1FF, keeping 9 bits
+				eram_address = eram_address | 0xF0; // MBC2 RAM is only 4 bits, so we need to mask the upper bits to 1
+				eram[eram_address] = value & 0x0F; // Only the lower 4 bits are used for MBC2 RAM
+			}
 		}
 		else if (cart_info.type == CART_TYPE::MBC3)
 		{

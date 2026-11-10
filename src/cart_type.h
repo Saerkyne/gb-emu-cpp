@@ -34,7 +34,7 @@ const cart_type_info cart_type_data[256] = {
 	{ CART_TYPE::MBC1,			true,	true,	false,	false,	false,	"MBC1 + RAM + Battery"			},		// 0x03
 	{ CART_TYPE::UNUSED,		false,	false,	false,	false,	false,	"Unused"						},		// 0x04
 	{ CART_TYPE::MBC2,			false,	false,	false,	false,	false,	"MBC2"							},		// 0x05
-	{ CART_TYPE::MBC2,			false,	true,	false,	false,	false,	"MBC2 + Battery"				},		// 0x06
+	{ CART_TYPE::MBC2,			true,	true,	false,	false,	false,	"MBC2 + RAM + Battery"			},		// 0x06
 	{ CART_TYPE::UNUSED,		false,	false,	false,	false,	false,	"Unused"						},		// 0x07
 	{ CART_TYPE::NO_MBC,		true,	false,	false,	false,	false,	"ROM + RAM"						},		// 0x08
 	{ CART_TYPE::NO_MBC,		true,	true,	false,	false,	false,	"ROM + RAM + Battery"			},		// 0x09

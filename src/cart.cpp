@@ -213,7 +213,11 @@ bool cart_load(const char* filename) {
 bool cart_check_save(const char* rom_filename) {
 	if (cart_supports_saves) // Cart needs to have a battery and RAM or RTC to have a save file
 	{
-		if (cartridge_header->ram_size >= sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) {
+		if (cartridge_header->ram_size == 0x00 && cart_type_data[cartridge_header->cartridge_type].type == CART_TYPE::MBC2)
+		{
+			printf("ROM %s is using MBC2 with built-in RAM.\n", rom_filename);
+		}
+		else if (cartridge_header->ram_size >= sizeof(cart_ram_size) / sizeof(cart_ram_size[0])) {
 			printf("ROM %s has an invalid RAM size (0x%02X). This is not supported. Please check the ROM.\n", rom_filename, cartridge_header->ram_size);
 			return false;
 		}
@@ -241,7 +245,19 @@ bool cart_check_save(const char* rom_filename) {
 		memcpy(save_filename_buffer, rom_filename, stem_length);
 		strcpy(save_filename_buffer + stem_length, ".sav");
 
-		if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is greater than 0
+		if (cart_type_data[cartridge_header->cartridge_type].type == CART_TYPE::MBC2)
+		{
+			save_size = 256; // MBC2 has 512 x 4 bits of built-in RAM, which is 256 bytes
+
+			if (cart_open_save_file(save_filename_buffer)) // Check if a save exists. 
+			{
+				// logic to load save file into ERAM
+				memcpy(eram, save_data, save_size); // Copy the save data into the ERAM buffer
+				return true;
+			}
+			return false;
+		}
+		else if (cart_ram_size[cartridge_header->ram_size].bank_count > 0) // Check if the RAM size is greater than 0
 		{
 			save_size = cart_ram_size[cartridge_header->ram_size].bank_count * 8 * 1024; // Calculate the expected save file size based on the RAM size
 			
