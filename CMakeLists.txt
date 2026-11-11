@@ -34,6 +34,8 @@ add_executable(gb-emu-cpp
   src/cpu_routines.h
   src/debug_log.cpp
   src/debug_log.h
+  src/dma.cpp
+  src/dma.h
   src/emulator_core.cpp
   src/emulator_core.h
   src/gfx.cpp

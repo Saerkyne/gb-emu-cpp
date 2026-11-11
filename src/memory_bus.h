@@ -17,6 +17,7 @@ extern uint8_t memory[MEMORY_SIZE];
 extern uint8_t eram[ERAM_SIZE];
 
 uint8_t memory_bus_read(const uint16_t addr);
+uint8_t memory_bus_read_inner(const uint16_t addr);
 void memory_bus_write(const uint16_t addr, const uint8_t value);
 void memory_bus_reset();
 

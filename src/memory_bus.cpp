@@ -1,6 +1,7 @@
 #include "memory_bus.h"
 #include "cart.h"
 #include "cart_type.h"
+#include "dma.h"
 #include "rtc.h"
 #include "timer.h"
 #include "interrupts.h"
@@ -26,7 +27,11 @@ void memory_bus_reset() {
 	rom_ram_mode_select = false;
 }
 
-uint8_t memory_bus_read(const uint16_t addr) 
+uint8_t memory_bus_read(const uint16_t addr) {
+	return memory_bus_read_inner(addr);
+}
+
+uint8_t memory_bus_read_inner(const uint16_t addr) 
 {
 
 	const cart_type_info& cart_info = cart_type_data[cartridge_header->cartridge_type];
@@ -515,11 +520,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		}
 		else if (addr == 0xFF46) // OAM DMA
 		{	
-			uint16_t source_addr = (value * 0x100);
-			const uint16_t dest = 0xFE00;
-			for (uint8_t i = 0; i < 160; i++) {
-				memory[dest + i] = memory_bus_read(source_addr + i);
-			}
+			dma_transfer_start(value); // Start the DMA transfer from the source address
 		}
 		else if (addr >= 0xFF47 && addr <= 0xFF49)
 		{
