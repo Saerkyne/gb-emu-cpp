@@ -28,21 +28,28 @@ void memory_bus_reset() {
 }
 
 uint8_t memory_bus_read(const uint16_t addr) {
-	if (dma_transfer_request && addr >= 0xFE00 && addr <= 0xFE9F) // If a DMA transfer is in progress and the address is in OAM
+	if (addr >= 0xFE00 && addr <= 0xFE9F) // OAM
 	{
-		if (dma_counter == 0 || dma_counter == 1 || dma_counter == 162)
+		if (dma_transfer_request)
 		{
-			return memory[addr]; // Return the value in OAM if the transfer hasn't started or has completed
+			if (dma_counter == 0 || dma_counter == 1 || dma_counter == 162)
+			{
+				return memory[addr]; // Return the value in OAM if the transfer hasn't started or has completed
+			}
+			else
+			{
+				return 0xFF; // Return 0xFF for the duration of the DMA transfer
+			}
+		}
+		else if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
+			LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return 0xFF;
 		}
 		else
 		{
-			return 0xFF; // Return 0xFF for the duration of the DMA transfer
+			return memory[addr];
 		}
-	}
-	else if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
-		LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
-	{
-		return 0xFF;
 	}
 	else
 	{

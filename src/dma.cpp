@@ -14,7 +14,6 @@ void dma_transfer_start(const uint8_t value)
 	dma_transfer_request = true;
 	dma_source = value; // Store the source address for the DMA transfer
 	dma_counter = 0;
-	dma_transfer_request = false; // Clear the DMA transfer request flag after completion
 }
 
 void dma_advance_clocks()
@@ -25,10 +24,12 @@ void dma_advance_clocks()
 	{
 		if (dma_counter == 0)
 		{
+			dma_counter++;
 			return; // The first cycle is the write to the DMA register, which is handled in memory_bus_write
 		}
 		if (dma_counter == 1)
 		{
+			dma_counter++;
 			return;
 		}
 		if (dma_counter >= 2 && dma_counter <= 161)
@@ -49,14 +50,15 @@ void dma_advance_clocks()
 				}
 				const uint16_t dest = 0xFE00;
 				memory[dest + dma_counter - 2] = memory_bus_read_inner(source_addr + dma_counter - 2); // Subtracting 2 to allow for the initial writes to the DMA register and the first cycles of the transfer window
+				dma_counter++;
+				return;
 			}
 		}
 		if (dma_counter == 162)
 		{
-			
+			dma_transfer_request = false; // DMA transfer is complete
 			return;
 		}
-		dma_counter++;
 	}
 }
 
