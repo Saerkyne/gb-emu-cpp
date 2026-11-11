@@ -34,18 +34,21 @@ uint8_t memory_bus_read(const uint16_t addr) {
 		{
 			return memory[addr]; // Return the value in OAM if the transfer hasn't started or has completed
 		}
-		else if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
-			LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
-		{
-			return 0xFF;
-		}
 		else
 		{
 			return 0xFF; // Return 0xFF for the duration of the DMA transfer
 		}
 	}
-
-	return memory_bus_read_inner(addr);
+	else if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
+		LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+	{
+		return 0xFF;
+	}
+	else
+	{
+		return memory_bus_read_inner(addr);
+	}
+	
 }
 
 uint8_t memory_bus_read_inner(const uint16_t addr) 
