@@ -490,7 +490,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // OAM Data
 	{
-		if (dma_transfer_request)
+		if (dma_counter >= 2 && dma_counter <= 161)
 		{
 			return; // Ignore writes to OAM during a DMA transfer
 		}

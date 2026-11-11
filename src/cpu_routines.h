@@ -214,6 +214,7 @@
 #define cpu_routine_ret_conditional(cond) {                                 \
 		core_advance_cpu_clocks(4);                                       	\
 		if (cond) {                                                         \
+			core_advance_cpu_clocks(4);										\
 			uint32_t temp = memory_bus_read(cpu_registers.sp++);          	\
 			cpu_registers.sp &= 0xFFFF;                                   	\
 			core_advance_cpu_clocks(4);                                   	\
@@ -221,7 +222,6 @@
 			cpu_registers.sp &= 0xFFFF;                                   	\
 			core_advance_cpu_clocks(4);                                   	\
 			cpu_registers.pc = temp;                                      	\
-			core_advance_cpu_clocks(4);                                   	\
 			core_advance_cpu_clocks(4);                                     \
 		} else {                                                            \
 			core_advance_cpu_clocks(4);                                   	\

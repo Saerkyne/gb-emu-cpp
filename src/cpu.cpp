@@ -1249,10 +1249,10 @@ void cpu_call_nn() { // 0xCD
 	memory_bus_write(cpu_registers.sp, pc_high);
 	core_advance_cpu_clocks(4);
 	cpu_registers.sp--;
-	core_advance_cpu_clocks(4);
 	const uint8_t pc_low = (cpu_registers.pc & 0xFF);
 	memory_bus_write(cpu_registers.sp, pc_low);
 	cpu_registers.pc = temp;
+	core_advance_cpu_clocks(4);
 }
 
 void cpu_adc_a_n() { // 0xCE
