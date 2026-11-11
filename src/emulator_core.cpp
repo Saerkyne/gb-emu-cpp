@@ -229,7 +229,7 @@ void core_advance_cpu_clocks(uint8_t clocks)
 	timer_advance_clocks(clocks);
 	ppu_advance_clocks(clocks);
 	rtc_advance_clocks(clocks);
-	dma_advance_clocks(clocks);
+	dma_advance_clocks();
 	
 	core_clock_counter += clocks;
 

@@ -28,16 +28,16 @@ void memory_bus_reset() {
 }
 
 uint8_t memory_bus_read(const uint16_t addr) {
-	if (!dma_transfer_request && addr >= 0xFE00 && addr <= 0xFE9F) // If a DMA transfer is in progress and the address is in OAM
+	if (dma_transfer_request && addr >= 0xFE00 && addr <= 0xFE9F) // If a DMA transfer is in progress and the address is in OAM
 	{
 		if (dma_counter == 0 || dma_counter == 1 || dma_counter == 162)
 		{
-			if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
-				LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
-			{
-				return 0xFF;
-			}
 			return memory[addr]; // Return the value in OAM if the transfer hasn't started or has completed
+		}
+		else if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
+			LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return 0xFF;
 		}
 		else
 		{
@@ -234,7 +234,7 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // Object Attribute Memory (sprite attribute table)
 	{
-		return dma_read_byte(); // Read a byte from the DMA transfer if one is in progress, or last value written if not.
+		return memory[addr];
 	}
 
 	if (addr >= 0xFEA0 && addr <= 0xFEFF) // Unused memory area
@@ -536,6 +536,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		}
 		else if (addr == 0xFF46) // OAM DMA
 		{	
+			memory[addr] = value;
 			dma_transfer_start(value); // Start the DMA transfer from the source address
 		}
 		else if (addr >= 0xFF47 && addr <= 0xFF49)
