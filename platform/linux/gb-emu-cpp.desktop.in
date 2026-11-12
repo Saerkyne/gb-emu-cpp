@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GoodBoy
+GenericName=Game Boy Emulator
+Comment=Original Game Boy (DMG) Emulator
+Exec="$<TARGET_FILE:gb-emu-cpp>" %F
+Terminal=false
+Categories=Game;Emulator;
+MimeType=application/x-gameboy-rom;application/x-gameboy-color-rom;

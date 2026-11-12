@@ -2,9 +2,13 @@
 
 #include <stdint.h>
 
-const int MAX_CART_SIZE = 1024 * 1024; // 1 MB or 8Mbit
+const int MAX_CART_SIZE = 1024 * 1024 * 8; // 8MB
+const int CART_MAX_PATH = 260; // Maximum path length for Windows
 extern uint8_t cartridge_data[MAX_CART_SIZE]; // Will contain game rom
 extern bool cartridge_loaded; // Flag to indicate if a cartridge is loaded
+extern bool cart_supports_saves; // Flag to indicate if the currently loaded cartridge supports saves
+extern char save_filename_buffer[CART_MAX_PATH]; // Buffer exposed for saving to file on shutdown
+extern uint32_t save_size; // Size of the save file, calculated based on the cartridge RAM size
 
 struct cart_header_struct {
 	uint8_t entry_point[4]; // Entry point for the cartridge
@@ -24,8 +28,27 @@ struct cart_header_struct {
 	uint8_t global_checksum_low; // Low byte of the 16-bit (high-endian) global checksum, used to verify the entire ROM
 };
 
+struct cart_ram_info {
+	uint8_t code;
+	uint32_t bank_count;
+};
+
+const cart_ram_info cart_ram_size[] = {
+	 { 0x00, 0 }, // 0x00
+	 { 0x01, 0 }, // 0x01
+	 { 0x02, 1 }, // 0x02
+	 { 0x03, 4 }, // 0x03
+	 { 0x04, 16 }, // 0x04
+	 { 0x05, 8 } // 0x05
+};
+
 extern cart_header_struct* cartridge_header; // Pointer to the cartridge header structure
 
-bool cart_open_file();
+
 void cart_print_info();
+bool cart_check_rom_file(const char* filename); // Validates a ROM's file size and header without touching the loaded cartridge
 bool cart_load(const char* filename);
+void cart_unload(); // Saves the current game if it supports saves, then returns the cartridge state to "nothing loaded"
+bool cart_check_save(const char* rom_filename);
+bool cart_open_save_file(const char* filename);
+bool cart_save_to_file(const char* filename);

@@ -16,10 +16,11 @@ void timer_init() {
     timer_registers->timer_tac = 0;
     timer_registers->timer_tima = 0;
     timer_registers->timer_tma = 0;
+    timer_interrupt_delay = 0;
 }
 
 void timer_check_clock_edges(const uint16_t prev_sysclk) {
-    const uint8_t div_prev = timer_registers->timer_div;
+    // const uint8_t div_prev = timer_registers->timer_div;
     const bool div_bit_4_prev = (timer_registers->timer_div >> 4) & 1;
 
     // Expose upper 8 bits
@@ -73,7 +74,8 @@ void timer_advance_clocks(const uint8_t cycles) {
     timer_increase_div(cycles);
 }
 
-void timer_on_div_write(const uint8_t _value) {
+void timer_on_div_write() {
+    // const uint8_t _value was previous input, not used currently.
     const uint16_t prev_sysclk = timer_internal_sysclk;
     timer_internal_sysclk = 0x0000;
     timer_check_clock_edges(prev_sysclk);

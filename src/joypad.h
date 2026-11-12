@@ -5,6 +5,7 @@ const uint16_t JOYPAD_REGISTER_ADDRESS = 0xFF00;
 
 uint8_t joypad_read_input();
 void joypad_write_input(uint8_t flags);
+void joypad_reset();
 
 void on_joypad_button_a(bool pressed);
 void on_joypad_button_b(bool pressed);
