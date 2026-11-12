@@ -1,8 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-extern bool dma_transfer_restart; // Flag to indicate a DMA transfer restart request mid-transfer
-
 struct dma_transfer_info {
 	bool dma_transfer_request;
 	uint8_t dma_counter;

@@ -490,10 +490,14 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // OAM Data
 	{
-		if (dma_current_info.dma_counter >= 2 && dma_current_info.dma_counter <= 161)
+		if (dma_current_info.dma_transfer_request)
 		{
-			return; // Ignore writes to OAM during a DMA transfer
+			if (dma_current_info.dma_counter >= 2 && dma_current_info.dma_counter <= 161)
+			{
+				return; // Ignore writes to OAM during a DMA transfer
+			}
 		}
+		
 		if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
 			LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
 		{
