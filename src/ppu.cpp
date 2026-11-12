@@ -1,4 +1,6 @@
 #include "ppu.h"
+#include "cpu.h" // for logging
+#include "debug_log.h" // for logging
 #include "emulator_core.h"
 #include "interrupts.h"
 #include "memory_bus.h"
@@ -144,6 +146,7 @@ void ppu_advance_clocks(const uint8_t clocks)
 			if (LCDS_PPU_MODE != LCDS_MODE_3_DRAWING)
 			{
 				ppu_clocks_spent_in_mode3[ppu_lcd_registers->ly] = ppu_scanline_dot;
+				ppu_scanline_dot++; // Added as a test for timing changes and HALT timings
 				continue;
 			}
 		}
@@ -275,6 +278,9 @@ void ppu_set_lcd_mode(uint8_t new_mode)
 void ppu_on_lcd_control_write(const uint8_t value)
 {
 	const bool prev_lcd_enabled = LCDC_ENABLE_LCD;
+	debug_log("LCDC write: PC=%04X LY=%d dot=%d old=%02X new=%02X\n",
+		cpu_registers.pc, ppu_lcd_registers->ly, ppu_scanline_dot,
+		ppu_lcd_registers->control, value);
 	ppu_lcd_registers->control = value;
 	const bool new_lcd_enabled = LCDC_ENABLE_LCD;
 	if (new_lcd_enabled != prev_lcd_enabled)

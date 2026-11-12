@@ -82,7 +82,7 @@ void interrupt_service_routine() {
 
     if (interrupt_pending) {
         if (cpu_halt_count == 1) {
-            core_advance_cpu_clocks(4);
+			// core_advance_cpu_clocks(4); // Commented out for HALT test passing - HALT should not advance clocks when an interrupt occurs. 
             cpu_halt_count = 0;
         }
         if (!interrupt_master_enable) {

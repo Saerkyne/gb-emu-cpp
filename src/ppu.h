@@ -12,6 +12,8 @@ const uint8_t LCDS_MODE_3_DRAWING = 3;
 
 const uint16_t OBJECT_ATTRIBUTE_ADDRESS = 0xFE00;
 
+extern uint16_t ppu_scanline_dot; // Declared for testing
+
 struct lcd_registers {
 	uint8_t control;
 	uint8_t status;

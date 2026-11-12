@@ -1,6 +1,7 @@
 #include "memory_bus.h"
 #include "cart.h"
 #include "cart_type.h"
+#include "cpu.h" // included for debugging registers
 #include "dma.h"
 #include "rtc.h"
 #include "timer.h"
@@ -383,6 +384,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 	{
 		if (LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
 		{
+			debug_log("Attempted to write to VRAM during mode 3 (drawing):\nProgram Counter: 0x%04X\n", cpu_registers.pc);
+			debug_log("LY: %d, SCX: %d, SCY: %d, WX: %d, WY: %d\n", ppu_lcd_registers->ly, ppu_lcd_registers->scx, ppu_lcd_registers->scy, ppu_lcd_registers->wx, ppu_lcd_registers->wy);
+			debug_log("ppu_scanline_dot: %d\n", ppu_scanline_dot);
+			debug_log("Address: 0x%04X, Value: 0x%02X\n", addr, value);
 			return;
 		}
 		memory[addr] = value;
