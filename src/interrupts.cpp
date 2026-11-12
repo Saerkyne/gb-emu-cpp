@@ -40,27 +40,27 @@ void interrupt_jump() {
     }
     else
     {
-		if (((memory[ADDR_IO_IE] & memory[ADDR_IO_IF]) & 0x1F) == 0x01)
+		if (CHECK_BIT(memory[ADDR_IO_IE], 0) && CHECK_BIT(memory[ADDR_IO_IF], 0))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 0);
             destination = INTERRUPT_HANDLER_V_BLANK;
 		}
-		else if (((memory[ADDR_IO_IE] & memory[ADDR_IO_IF]) & 0x1F) == 0x02)
+		else if (CHECK_BIT(memory[ADDR_IO_IE], 1) && CHECK_BIT(memory[ADDR_IO_IF], 1))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 1);
             destination = INTERRUPT_HANDLER_LCD_STATUS;
 		}
-		else if (((memory[ADDR_IO_IE] & memory[ADDR_IO_IF]) & 0x1F) == 0x04)
+		else if (CHECK_BIT(memory[ADDR_IO_IE], 2) && CHECK_BIT(memory[ADDR_IO_IF], 2))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 2);
             destination = INTERRUPT_HANDLER_TIMER;
 		}
-		else if (((memory[ADDR_IO_IE] & memory[ADDR_IO_IF]) & 0x1F) == 0x08)
+		else if (CHECK_BIT(memory[ADDR_IO_IE], 3) && CHECK_BIT(memory[ADDR_IO_IF], 3))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 3);
             destination = INTERRUPT_HANDLER_SERIAL;
 		}
-		else if (((memory[ADDR_IO_IE] & memory[ADDR_IO_IF]) & 0x1F) == 0x10)
+		else if (CHECK_BIT(memory[ADDR_IO_IE], 4) && CHECK_BIT(memory[ADDR_IO_IF], 4))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 4);
             destination = INTERRUPT_HANDLER_JOYPAD;
@@ -88,16 +88,7 @@ void interrupt_service_routine() {
         if (!interrupt_master_enable) {
             return;
         }
-        
-        interrupt_v_blank = (CHECK_BIT(interrupt_enable, 0) && CHECK_BIT(interrupt_flag, 0));
-        interrupt_lcd_stat = (CHECK_BIT(interrupt_enable, 1) && CHECK_BIT(interrupt_flag, 1));
-        interrupt_timer = (CHECK_BIT(interrupt_enable, 2) && CHECK_BIT(interrupt_flag, 2));
-        interrupt_serial = (CHECK_BIT(interrupt_enable, 3) && CHECK_BIT(interrupt_flag, 3));
-        interrupt_joypad = (CHECK_BIT(interrupt_enable, 4) && CHECK_BIT(interrupt_flag, 4));
 
-        if (interrupt_v_blank || interrupt_lcd_stat || interrupt_timer || interrupt_serial || interrupt_joypad) {
-            interrupt_jump();
-            return;
-        }
+        interrupt_jump();
     }
 }
