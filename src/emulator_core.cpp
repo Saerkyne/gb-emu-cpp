@@ -68,6 +68,7 @@ void core_run()
 		{
 			cpu_tick();
 
+
 			// Test Mode Block
 			if (test_mode && core_clock_counter >= CORE_TEST_CLOCK_LIMIT)
 			{

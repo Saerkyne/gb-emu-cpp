@@ -31,7 +31,7 @@ void cpu_reset() {
 	cpu_current_instruction_execute = nullptr;
 	cpu_halt_count = 0;
 	cpu_halt_bug = false;
-	cpu_debug_instructions = true;
+	cpu_debug_instructions = false;
 	ime_delay_occured = false;
 
 	interrupt_master_enable = false;
@@ -95,28 +95,28 @@ bool cpu_execute() {
 	return true;
 }
 
-void cpu_dump_registers(const gb_cpu_registers& registers) {
-	const uint8_t op_code = memory_bus_read(registers.pc);
+void cpu_dump_registers(const gb_cpu_registers& cpu_registers) {
+	const uint8_t op_code = memory_bus_read(cpu_registers.pc);
 	const gb_cpu_instruction& instruction = instructions[op_code];
-	// const uint8_t pc_high = (registers.pc & 0xFF00) >> 8;
-	// const uint8_t pc_low = (registers.pc & 0xFF);
-	// const uint8_t sp_high = (registers.sp & 0xFF00) >> 8;
-	// const uint8_t sp_low = (registers.sp & 0xFF);
+	const uint8_t pc_high = (cpu_registers.pc & 0xFF00) >> 8;
+	const uint8_t pc_low = (cpu_registers.pc & 0xFF);
+	const uint8_t sp_high = (cpu_registers.sp & 0xFF00) >> 8;
+	const uint8_t sp_low = (cpu_registers.sp & 0xFF);
 
 	if (instruction.operand_length == 0) {
-		// debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-		//	registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			cpu_registers.af_bytes.a, cpu_registers.af_bytes.f, cpu_registers.bc_bytes.b, cpu_registers.bc_bytes.c, cpu_registers.de_bytes.d, cpu_registers.de_bytes.e, cpu_registers.hl_bytes.h, cpu_registers.hl_bytes.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 	else if (instruction.operand_length == 1) {
-		// const uint8_t operand = memory_bus_read(registers.pc + 1);
-		// debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-			//registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		const uint8_t operand = memory_bus_read(cpu_registers.pc + 1);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			cpu_registers.af_bytes.a, cpu_registers.af_bytes.f, cpu_registers.bc_bytes.b, cpu_registers.bc_bytes.c, cpu_registers.de_bytes.d, cpu_registers.de_bytes.e, cpu_registers.hl_bytes.h, cpu_registers.hl_bytes.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 	else if (instruction.operand_length == 2) {
-		// const uint8_t op_low = memory_bus_read(registers.pc + 1);
-		// const uint8_t op_high = memory_bus_read(registers.pc + 2);
-		// debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-		//	registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		const uint8_t op_low = memory_bus_read(cpu_registers.pc + 1);
+		const uint8_t op_high = memory_bus_read(cpu_registers.pc + 2);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			cpu_registers.af_bytes.a, cpu_registers.af_bytes.f, cpu_registers.bc_bytes.b, cpu_registers.bc_bytes.c, cpu_registers.de_bytes.d, cpu_registers.de_bytes.e, cpu_registers.hl_bytes.h, cpu_registers.hl_bytes.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 }
 

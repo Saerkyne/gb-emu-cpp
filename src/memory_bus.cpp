@@ -263,6 +263,13 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 			return joypad_read_input();	
 		}
 
+		if (addr == ADDR_IO_IF) // Interrupt Flag Register
+		{
+			uint8_t interrupt_flag = memory[ADDR_IO_IF];
+			interrupt_flag = interrupt_flag | 0b11100000; // Only the lower 5 bits are used for the interrupt flag, but the upper 3 bits should return 0x1
+			return interrupt_flag;
+		}
+
 		if (addr == 0xFF4C || addr == 0xFF4D) // Game Boy Color KEY0 and KEY1 registers (not implemented)
 		{
 			return 0xFF; // Return 0xFF for unimplemented registers
