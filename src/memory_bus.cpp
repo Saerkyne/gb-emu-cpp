@@ -30,9 +30,9 @@ void memory_bus_reset() {
 uint8_t memory_bus_read(const uint16_t addr) {
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // OAM
 	{
-		if (dma_transfer_request)
+		if (dma_current_info.dma_transfer_request)
 		{
-			if (dma_counter == 0 || dma_counter == 1 || dma_counter == 162)
+			if (dma_current_info.dma_counter == 0 || dma_current_info.dma_counter == 1 || dma_current_info.dma_counter == 162)
 			{
 				return memory[addr]; // Return the value in OAM if the transfer hasn't started or has completed
 			}
@@ -490,7 +490,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // OAM Data
 	{
-		if (dma_counter >= 2 && dma_counter <= 161)
+		if (dma_current_info.dma_counter >= 2 && dma_current_info.dma_counter <= 161)
 		{
 			return; // Ignore writes to OAM during a DMA transfer
 		}

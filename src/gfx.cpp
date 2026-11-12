@@ -1,4 +1,5 @@
 #include "gfx.h"
+#include "emulator_core.h"
 #include <stdlib.h>
 #include <stdio.h>
 
