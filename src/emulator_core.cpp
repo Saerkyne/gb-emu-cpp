@@ -2,6 +2,7 @@
 #include "cart.h"
 #include "cpu.h"
 #include "dma.h"
+#include "debug_log.h" 
 #include "interrupts.h"
 #include "ppu.h"
 #include "rtc.h"
@@ -67,6 +68,8 @@ void core_run()
 		if (cartridge_loaded) 
 		{
 			cpu_tick();
+			
+
 
 			// Test Mode Block
 			if (test_mode && core_clock_counter >= CORE_TEST_CLOCK_LIMIT)
