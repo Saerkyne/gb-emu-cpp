@@ -28,7 +28,7 @@
 #define SQ1_LENGTH_ENABLE ((audio_registers->nr1[4] & 0b01000000) >> 6)
 #define SQ1_FREQUENCY_MSB (audio_registers->nr1[4] & 0b00000111)
 #define SQ1_FREQUENCY ((SQ1_FREQUENCY_MSB << 8) | SQ1_FREQUENCY_LSB)
-#define SET_SQ1_TRIGGER(value) audio_registers->nr1[4] = (audio_registers->nr1[4] & ~(1 <<7)) | (value << 7))
+#define SET_SQ1_TRIGGER(value) audio_registers->nr1[4] = (audio_registers->nr1[4] & ~(1 << 7)) | (value << 7)
 #define SET_SQ1_LENGTH_LOAD(value) audio_registers->nr1[1] = ((audio_registers->nr1[1] & 0b11000000) | value)
 
 struct audio_register_set {

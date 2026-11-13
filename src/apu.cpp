@@ -289,6 +289,84 @@ void apu_write(uint16_t addr, uint8_t value)
 	}
 	else if (addr == 0xFF12)
 	{
-		// Continue APU work here
+		audio_registers->nr1[2] = value;
+		sq1_env_volume = SQ1_ENV_VOLUME;
+		sq1_env_counter = SQ1_ENV_PERIOD > 0 ? SQ1_ENV_PERIOD : 8;
+		if (SQ1_ENV_VOLUME == 0)
+		{
+			SET_APU_STATUS_SQ1(0);
+		}
 	}
+	else if (addr == 0xFF13)
+	{
+		audio_registers->nr1[3] = value;
+	}
+	else if (addr == 0xFF14)
+	{
+		const bool length_enable_prev = SQ1_LENGTH_ENABLE;
+		audio_registers->nr1[4] = value;
+		const bool length_became_enabled = !length_enable_prev && SQ1_LENGTH_ENABLE;
+		const bool is_first_half_of_frame_clock = (apu_clock_counter % 2 == 0);
+		const bool triggered = SQ1_TRIGGER;
+		if (triggered)
+		{
+			SET_SQ1_TRIGGER(0);
+			sq1_freq_counter = 4 * (2048 - SQ1_FREQUENCY);
+			sq1_env_volume = SQ1_ENV_VOLUME;
+			sq1_env_counter = SQ1_ENV_PERIOD > 0 ? SQ1_ENV_PERIOD : 8;
+			sq1_sweep_frequency = SQ1_FREQUENCY;
+			sq1_sweep_counter = SQ1_SWEEP_PERIOD > 0 ? SQ1_SWEEP_PERIOD : 8;
+			sq1_sweep_enabled = (SQ1_SWEEP_PERIOD != 0 || SQ1_SWEEP_SHIFT != 0);
+			if (SQ1_SWEEP_SHIFT != 0)
+			{
+				calculate_sq1_sweep(false);
+			}
+			if (SQ1_LENGTH_LOAD == 0)
+			{
+				sq1_length_counter = 64;
+				SET_SQ1_LENGTH_LOAD(63);
+			}
+
+			const bool sq1_volume_enable = SQ1_ENV_VOLUME > 0 || SQ1_ENV_ADD;
+			const bool sq1_length_enable = (!SQ1_LENGTH_ENABLE || (SQ1_LENGTH_ENABLE && SQ1_LENGTH_LOAD));
+			SET_APU_STATUS_SQ1(sq1_volume_enable && sq1_length_enable);
+			if (length_became_enabled)
+			{
+				apu_clock_sq1_length();
+			}
+		}
+		else if (SQ1_LENGTH_LOAD > 0 && length_became_enabled && is_first_half_of_frame_clock)
+		{
+			apu_clock_sq1_length();
+		}
+	}
+
+	else if (addr == 0xFF24)
+	{
+		audio_registers->nr5[0] = value;
+	}
+	else if (addr == 0xFF25)
+	{
+		audio_registers->nr5[1] = value;
+	}
+	else if (addr == 0xFF26)
+	{
+		const bool prev_power_status = APU_POWER_STATUS;
+		audio_registers->nr5[2] = value;
+		const bool new_power_status = APU_POWER_STATUS;
+		if (prev_power_status && !new_power_status)
+		{
+			memset(audio_registers->nr1, 0, sizeof(audio_registers->nr1));
+			memset(audio_registers->nr2, 0, sizeof(audio_registers->nr2));
+			memset(audio_registers->nr3, 0, sizeof(audio_registers->nr3));
+			memset(audio_registers->nr4, 0, sizeof(audio_registers->nr4));
+			memset(audio_registers->nr5, 0, sizeof(audio_registers->nr5));
+		}
+		else if (!prev_power_status && new_power_status)
+		{
+			audio_registers->nr5[2] = 0b10000000;
+		}
+		
+	}
+
 }

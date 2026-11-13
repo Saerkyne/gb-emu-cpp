@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "memory_bus.h"
 #include "joypad.h"
+#include "apu.h"
 #include <chrono>
 #include <thread>
 
@@ -15,7 +16,7 @@ gfx_context* gfx_render_ctx = nullptr;
 
 uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
-std::chrono::steady_clock::time_point core_time_frame_begin;
+std::chrono::system_clock::time_point core_time_frame_begin;
 
 void core_init_gfx_contexts();
 void core_on_key_press(SDL_Scancode sym, bool down);
@@ -24,7 +25,7 @@ void core_sleep_until(std::chrono::high_resolution_clock::time_point targetTime)
 int core_init()
 {
 
-	if (!SDL_Init(SDL_INIT_VIDEO))
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
 	{
 		printf("SDL_Init failed: %s\n", SDL_GetError());
 		return -1;
@@ -41,6 +42,7 @@ int core_init()
 
 	ppu_init();
 	timer_init();
+	apu_init();
 
 	return 0;
 }
@@ -50,8 +52,9 @@ void core_run()
 	memset(memory, 0, MEMORY_SIZE);
 	cpu_reset();
 	ppu_reset();
+	apu_reset();
 
-	core_time_frame_begin = std::chrono::high_resolution_clock::now();
+	core_time_frame_begin = std::chrono::system_clock::now();
 
 	while (!core_quit_requested) 
 	{
@@ -61,6 +64,8 @@ void core_run()
 
 void core_shutdown() 
 {
+	apu_shutdown();
+
 	gfx_destroy(gfx_render_ctx);
 	gfx_destroy(gfx_debug_ctx);
 
@@ -98,21 +103,22 @@ void core_on_frame()
 		}
 	}
 
-	auto time_frame_end = std::chrono::high_resolution_clock::now();
+	auto time_frame_end = std::chrono::system_clock::now();
 	auto time_elapsed = time_frame_end - core_time_frame_begin;
 	auto sleep_time = std::chrono::nanoseconds((CPU_FRAME_TIME_NS) - time_elapsed.count());
 	if (sleep_time.count() > 0)
 	{
-		std::chrono::high_resolution_clock::time_point end_of_sleep = time_frame_end + sleep_time;
+		std::chrono::system_clock::time_point end_of_sleep = time_frame_end + sleep_time;
 		core_sleep_until(end_of_sleep);
 	}
-	core_time_frame_begin = std::chrono::high_resolution_clock::now();
+	core_time_frame_begin = std::chrono::system_clock::now();
 }
 
 void core_advance_cpu_clocks(uint8_t clocks) 
 {
 	timer_advance_clocks(clocks);
 	ppu_advance_clocks(clocks);
+	apu_tick(clocks);
 	
 	core_clock_counter += clocks;
 
