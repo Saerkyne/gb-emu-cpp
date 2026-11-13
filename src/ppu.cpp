@@ -149,16 +149,15 @@ void ppu_advance_clocks(const uint8_t clocks)
 				ppu_clocks_spent_in_mode0[ppu_lcd_registers->ly] = ppu_scanline_dot;
 				ppu_scanline_dot = 0;
 				ppu_lcd_registers->ly++;
+				ppu_check_ly_compare();
 				if (ppu_lcd_registers->ly == 144)
 				{
 					ppu_set_lcd_mode(LCDS_MODE_1_V_BLANK);
 					interrupt_raise_flag(INTERRUPT_FLAG_VBLANK);
-					ppu_check_ly_compare();
 				}
 				else
 				{
 					ppu_set_lcd_mode(LCDS_MODE_2_OAM_SEARCH);
-					ppu_check_ly_compare();
 				}
 				continue;
 			}
@@ -181,7 +180,6 @@ void ppu_advance_clocks(const uint8_t clocks)
 
 					core_on_frame();
 				}
-				ppu_check_ly_compare();
 				continue;
 			}
 		}
@@ -194,6 +192,10 @@ void ppu_check_ly_compare()
 	if (LCDC_ENABLE_LCD && ppu_lcd_registers->ly == ppu_lcd_registers->lyc)
 	{
 		CHANGE_BIT(ppu_lcd_registers->status, 1, 2);
+		if ((ppu_lcd_registers->ly == ppu_lcd_registers->lyc) && LCDS_LYC_EQUALS_LY_INTERRUPT_ENABLE)
+		{
+			interrupt_raise_flag(INTERRUPT_FLAG_STAT);
+		}
 	}
 	else
 	{
@@ -208,8 +210,7 @@ void ppu_check_stat_signal()
 		return;
 	}
 	const uint8_t ppu_mode = LCDS_PPU_MODE;
-	if (((ppu_lcd_registers->ly == ppu_lcd_registers->lyc) && LCDS_LYC_EQUALS_LY_INTERRUPT_ENABLE) ||
-		((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
+	if (((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_1_V_BLANK) && LCDS_MODE_1_STAT_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE))
 	{
@@ -223,7 +224,6 @@ void ppu_on_lyc_write(const uint8_t value)
 	if (LCDC_ENABLE_LCD)
 	{
 		ppu_check_ly_compare();
-		ppu_check_stat_signal();
 	}
 }
 
@@ -283,8 +283,8 @@ void ppu_on_lcd_status_write(const uint8_t value)
 void ppu_on_palette_write(const uint16_t addr)
 {
 	if (addr == 0xFF47) extract_palette(addr, background_palette);
-	if (addr == 0xFF48) extract_palette(addr, background_palette);
-	if (addr == 0xFF49) extract_palette(addr, background_palette);
+	if (addr == 0xFF48) extract_palette(addr, sprite_palette_0);
+	if (addr == 0xFF49) extract_palette(addr, sprite_palette_1);
 }
 
 void render_frame()
