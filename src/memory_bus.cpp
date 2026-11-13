@@ -1,4 +1,5 @@
 #include "memory_bus.h"
+#include "apu.h"
 #include "cart.h"
 #include "cart_type.h"
 #include "cpu.h" // included for debugging registers
@@ -294,6 +295,10 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 		if (addr == 0xFF00) // Joypad input
 		{
 			return joypad_read_input();	
+		}
+		else if (addr >= 0xFF10 && addr <= 0xFF3F) // APU
+		{
+			return apu_read(addr);
 		}
 
 		if (addr == ADDR_IO_IF) // Interrupt Flag Register
@@ -627,6 +632,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		else if (addr == 0xFF0F) // Interrupt flag write
 		{
 			interrupt_flag_write(value);
+		}
+		else if (addr >= 0xFF10 && addr <= 0xFF3F) // APU
+		{
+			apu_write(addr, value);
 		}
 		else if (addr == 0xFF40)
 		{

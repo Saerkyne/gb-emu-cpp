@@ -9,6 +9,7 @@
 #include "timer.h"
 #include "memory_bus.h"
 #include "joypad.h"
+#include "apu.h"
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -28,7 +29,7 @@ gfx_context* gfx_render_ctx = nullptr;
 
 uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
-std::chrono::steady_clock::time_point core_time_frame_begin;
+std::chrono::system_clock::time_point core_time_frame_begin;
 
 static char core_requested_rom_path[CART_MAX_PATH]; // Path of the ROM waiting to be loaded
 static bool core_rom_load_pending = false; // Set by core_request_rom_load, cleared by core_handle_rom_request
@@ -44,7 +45,7 @@ void core_idle();
 int core_init()
 {
 
-	if (!SDL_Init(SDL_INIT_VIDEO))
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
 	{
 		printf("SDL_Init failed: %s\n", SDL_GetError());
 		return -1;
@@ -52,11 +53,20 @@ int core_init()
 
 	core_init_gfx_contexts();
 
+	ppu_init();
+	timer_init();
+	apu_init();
+
 	return 0;
 }
 
 void core_run() 
 {
+	memset(memory, 0, MEMORY_SIZE);
+	cpu_reset();
+	ppu_reset();
+	apu_reset();
+
 	core_time_frame_begin = std::chrono::steady_clock::now();
 
 	while (!core_quit_requested) 
@@ -98,6 +108,8 @@ void core_run()
 
 void core_shutdown() 
 {
+	apu_shutdown();
+
 	gfx_destroy(gfx_render_ctx);
 	gfx_destroy(gfx_debug_ctx);
 	
@@ -217,6 +229,7 @@ void core_handle_rom_request()
 	ppu_reset();
 	timer_init();
 	dma_reset();
+  
 
 	cart_print_info();
 
@@ -233,6 +246,7 @@ void core_advance_cpu_clocks(uint8_t clocks)
 {
 	timer_advance_clocks(clocks);
 	ppu_advance_clocks(clocks);
+	apu_tick(clocks);
 	rtc_advance_clocks(clocks);
 	dma_advance_clocks();
 	
