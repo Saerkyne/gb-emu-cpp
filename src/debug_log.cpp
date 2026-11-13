@@ -4,7 +4,7 @@
 #include <cstdarg>
 #include <string>
 
-bool log_to_console = true;
+bool log_to_console = false;
 bool log_to_file = true;
 static SDL_IOStream* logfile = NULL;
 

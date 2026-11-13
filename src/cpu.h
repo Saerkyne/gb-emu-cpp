@@ -77,6 +77,8 @@ struct gb_cpu_registers {
 typedef void(*cpu_execute_op)(); // Function pointer type for CPU instruction execution
 
 extern gb_cpu_registers cpu_registers; // Global instance of CPU registers
+extern uint8_t cpu_current_op_code; // Current opcode being executed
+extern uint8_t cpu_halt_count; // Count of HALT instructions executed
 
 
 void cpu_reset();

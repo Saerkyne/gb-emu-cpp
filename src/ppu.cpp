@@ -41,6 +41,7 @@ uint8_t ppu_pixel_fifo_occupancy = 0;
 bool ppu_fetcher_first_scanline_steps = false;
 int16_t ppu_shifter_pixel_x = 0;
 uint8_t ppu_discard_pixels = 0;
+bool ppu_stat_signal_old = false; // for storing previous stat line in ppu_check_stat_signal. False is low, True is high.
 
 const SDL_Color ppu_lcd_color_lit = { 223, 230, 179, 255 };
 const SDL_Color ppu_gb_colors[4] = {
@@ -230,13 +231,15 @@ void ppu_check_stat_signal()
 		return;
 	}
 	const uint8_t ppu_mode = LCDS_PPU_MODE;
-	if (((ppu_lcd_registers->ly == ppu_lcd_registers->lyc) && LCDS_LYC_EQUALS_LY_INTERRUPT_ENABLE) ||
+	const bool ppu_stat_signal = ((ppu_lcd_registers->ly == ppu_lcd_registers->lyc) && LCDS_LYC_EQUALS_LY_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_1_V_BLANK) && LCDS_MODE_1_STAT_INTERRUPT_ENABLE) ||
-		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE))
+		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE);
+	if (ppu_stat_signal && !ppu_stat_signal_old)
 	{
 		interrupt_raise_flag(INTERRUPT_FLAG_STAT);
 	}
+	ppu_stat_signal_old = ppu_stat_signal;
 }
 
 void ppu_on_lyc_write(const uint8_t value)
