@@ -95,7 +95,7 @@ void apu_tick(uint8_t clocks)
 			sq1_phase = (sq1_phase + 1) % 8;
 		}
 
-		if (1 % 4 == 0) // 1Mhz
+		if (i % 4 == 0) // 1Mhz
 		{
 			if (APU_STATUS_SQ1)
 			{

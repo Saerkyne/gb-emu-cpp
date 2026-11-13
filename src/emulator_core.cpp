@@ -229,6 +229,7 @@ void core_handle_rom_request()
 	ppu_reset();
 	timer_init();
 	dma_reset();
+	apu_reset();
   
 
 	cart_print_info();
