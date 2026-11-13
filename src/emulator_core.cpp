@@ -20,6 +20,8 @@ int core_exit_code = CORE_EXIT_OK; // Exit code for the emulator core, used in t
 const uint32_t CORE_TEST_CLOCK_LIMIT = 41194304u * 120u; // 120 seconds at 41,194,304 Hz
 // End Test Mode Block
 
+bool debug_mode = false;
+
 const uint32_t CPU_FRAME_TIME_NS = 1.0 / 60.0 * 1000000000;
 gfx_context* gfx_debug_ctx = nullptr;
 gfx_context* gfx_render_ctx = nullptr;

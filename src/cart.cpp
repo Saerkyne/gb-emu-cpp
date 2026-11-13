@@ -95,6 +95,20 @@ static bool cart_header_is_valid(const uint8_t* rom, const char* filename) {
 			return false;
 		}
 	}
+
+	if (cart_type_data[header->cartridge_type].type == CART_TYPE::MBC5)
+	{
+		if (header->ram_size > 0x04)
+		{
+			printf("ROM %s is using MBC5 with invalid ERAM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, header->ram_size);
+			return false;
+		}
+		if (header->rom_size > 0x08)
+		{
+			printf("ROM %s is using MBC5 with invalid ROM size value (0x%02X). This is not supported. Please check the ROM.\n", filename, header->rom_size);
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -191,6 +205,15 @@ bool cart_load(const char* filename) {
 			if (cart_info.has_timer) // All carts with timers have batteries.
 			{
 				rtc_init();
+			}
+		}
+		break;
+	case CART_TYPE::MBC5:
+		if (cart_info.type == CART_TYPE::MBC5)
+		{
+			if (cart_info.has_battery && cart_info.has_ram)
+			{
+				cart_supports_saves = true;
 			}
 		}
 		break;
