@@ -5,8 +5,16 @@
 #include "emulator_core.h"
 #include "timer.h"
 #include "interrupts.h"
+#include "ppu.h"
 #include "debug_log.h"
 #include <cstdio>
+
+
+// ---- Temporary trace (remove when done) ----
+extern uint16_t ppu_scanline_dot;
+static int trace_state = 0;   // 0 = waiting for start, 1 = tracing, 2 = finished
+static int trace_lines = 0;
+// ------------------------------------------------
 
 gb_cpu_registers cpu_registers; // Global instance of CPU registers
 uint8_t cpu_current_op_code = 0; // Current operation code being executed
@@ -31,7 +39,7 @@ void cpu_reset() {
 	cpu_current_instruction_execute = nullptr;
 	cpu_halt_count = 0;
 	cpu_halt_bug = false;
-	cpu_debug_instructions = true;
+	cpu_debug_instructions = false;
 	ime_delay_occured = false;
 
 	interrupt_master_enable = false;
@@ -41,21 +49,81 @@ void cpu_reset() {
 }
 
 void cpu_tick() {
-	if (cpu_halt_count == 0) {
-		cpu_fetch();
-		cpu_execute();
-		cpu_instruction_counter++;
-	} else {
-		core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
-	}
+	if (debug_mode)
+	{
+		const uint16_t pc_before = cpu_registers.pc;
+		const bool halted_at_start = cpu_halt_count != 0;
 
-	if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
-		cpu_debug_instructions = false;
-		debug_log_close_file();
-	}
+		// Arm on the first call to VRAMEnable, stop at the font loop or after 5000 lines
+		if (trace_state == 0 && !halted_at_start && pc_before == 0x0048) {
+			trace_state = 1;
+			debug_log("TRACE START\n");
+		}
+		if (trace_state == 1 && !halted_at_start && trace_lines >= 600) {
+			trace_state = 2;
+			debug_log("TRACE END at PC=%04X\n", pc_before);
+		}
 
-	interrupt_service_routine();
+		if (cpu_halt_count == 0) {
+			cpu_fetch();
+			cpu_execute();
+			cpu_instruction_counter++;
+
+			if (trace_state == 1) {
+				debug_log("%04X: %02X %02X %02X | AF=%04X BC=%04X DE=%04X HL=%04X SP=%04X | IME=%d IE=%02X IF=%02X | LCDC=%02X STAT=%02X LY=%d dot=%d\n",
+					pc_before, cpu_current_op_code,
+					memory_bus_read(pc_before + 1), memory_bus_read(pc_before + 2),
+					cpu_registers.af, cpu_registers.bc, cpu_registers.de, cpu_registers.hl, cpu_registers.sp,
+					interrupt_master_enable ? 1 : 0, memory[ADDR_IO_IE], memory[ADDR_IO_IF],
+					memory[0xFF40], memory[0xFF41], memory[0xFF44], ppu_scanline_dot);
+				trace_lines++;
+				if (cpu_halt_count != 0) {
+					debug_log("  HALT entered\n");
+				}
+			}
+		}
+		else {
+			core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
+		}
+
+		if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
+			cpu_debug_instructions = false;
+			debug_log_close_file();
+		}
+
+		const bool halted_before_isr = cpu_halt_count != 0;
+		const uint16_t pc_before_isr = cpu_registers.pc;
+		interrupt_service_routine();
+
+		if (trace_state == 1) {
+			if (halted_before_isr && cpu_halt_count == 0) {
+				debug_log("  HALT left: IE=%02X IF=%02X LY=%d dot=%d\n",
+					memory[ADDR_IO_IE], memory[ADDR_IO_IF], memory[0xFF44], ppu_scanline_dot);
+			}
+			if (cpu_registers.pc != pc_before_isr) {
+				debug_log("  INTERRUPT -> %04X (from %04X) LY=%d dot=%d\n",
+					cpu_registers.pc, pc_before_isr, memory[0xFF44], ppu_scanline_dot);
+			}
+		}
+	}
+	else 
+	{
+		if (cpu_halt_count == 0) {
+			cpu_fetch();
+			cpu_execute();
+			cpu_instruction_counter++;
+		}
+		else {
+			core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
+		}
+		if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
+			cpu_debug_instructions = false;
+			debug_log_close_file();
+		}
+		interrupt_service_routine();
+	}
 }
+
 
 void cpu_fetch() {
 
@@ -95,28 +163,28 @@ bool cpu_execute() {
 	return true;
 }
 
-void cpu_dump_registers(const gb_cpu_registers& registers) {
-	const uint8_t op_code = memory_bus_read(registers.pc);
+void cpu_dump_registers(const gb_cpu_registers& cpu_registers) {
+	const uint8_t op_code = memory_bus_read(cpu_registers.pc);
 	const gb_cpu_instruction& instruction = instructions[op_code];
-	// const uint8_t pc_high = (registers.pc & 0xFF00) >> 8;
-	// const uint8_t pc_low = (registers.pc & 0xFF);
-	// const uint8_t sp_high = (registers.sp & 0xFF00) >> 8;
-	// const uint8_t sp_low = (registers.sp & 0xFF);
+	const uint8_t pc_high = (cpu_registers.pc & 0xFF00) >> 8;
+	const uint8_t pc_low = (cpu_registers.pc & 0xFF);
+	const uint8_t sp_high = (cpu_registers.sp & 0xFF00) >> 8;
+	const uint8_t sp_low = (cpu_registers.sp & 0xFF);
 
 	if (instruction.operand_length == 0) {
-		// debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-		//	registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			cpu_registers.af_bytes.a, cpu_registers.af_bytes.f, cpu_registers.bc_bytes.b, cpu_registers.bc_bytes.c, cpu_registers.de_bytes.d, cpu_registers.de_bytes.e, cpu_registers.hl_bytes.h, cpu_registers.hl_bytes.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 	else if (instruction.operand_length == 1) {
-		// const uint8_t operand = memory_bus_read(registers.pc + 1);
-		// debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-			//registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		const uint8_t operand = memory_bus_read(cpu_registers.pc + 1);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			cpu_registers.af_bytes.a, cpu_registers.af_bytes.f, cpu_registers.bc_bytes.b, cpu_registers.bc_bytes.c, cpu_registers.de_bytes.d, cpu_registers.de_bytes.e, cpu_registers.hl_bytes.h, cpu_registers.hl_bytes.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 	else if (instruction.operand_length == 2) {
-		// const uint8_t op_low = memory_bus_read(registers.pc + 1);
-		// const uint8_t op_high = memory_bus_read(registers.pc + 2);
-		// debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
-		//	registers.a, registers.f, registers.b, registers.c, registers.d, registers.e, registers.h, registers.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
+		const uint8_t op_low = memory_bus_read(cpu_registers.pc + 1);
+		const uint8_t op_high = memory_bus_read(cpu_registers.pc + 2);
+		debug_log("AF: %.2X%.2X  BC: %.2X%.2X  DE: %.2X%.2X  HL: %.2X%.2X  SP: %.2X%.2X  PC: %.2X%.2X %s\n",
+			cpu_registers.af_bytes.a, cpu_registers.af_bytes.f, cpu_registers.bc_bytes.b, cpu_registers.bc_bytes.c, cpu_registers.de_bytes.d, cpu_registers.de_bytes.e, cpu_registers.hl_bytes.h, cpu_registers.hl_bytes.l, sp_high, sp_low, pc_high, pc_low, instruction.dissassembly);
 	}
 }
 

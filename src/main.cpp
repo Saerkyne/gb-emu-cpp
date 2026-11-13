@@ -26,6 +26,20 @@ int main(int argc, char* argv[])
 			}
 			rompath = argv[++i]; // move to the next argument before using it
 		}
+		else if (strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0)
+		{
+			debug_mode = true;
+		}
+		else if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0)
+		{
+			printf("Usage: %s [options] [rompath]\n", argv[0]);
+			printf("Options:\n");
+			printf("  -t, --test-mode       Run in test mode.\n");
+			printf("  -r, --rom <path>      Specify the ROM path.\n");
+			printf("  -d, --debug           Enable debug mode.\n");
+			printf("  -h, --help            Show this help message.\n");
+			return CORE_EXIT_BAD_ARGS;
+		}
 		else if (arg[0] == '-')
 		{
 			printf("Unknown option: %s\n", arg);
