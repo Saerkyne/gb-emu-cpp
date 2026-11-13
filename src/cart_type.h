@@ -3,7 +3,7 @@
 enum CART_TYPE {
 	NO_MBC,			// Implemented
 	MBC1,			// Implemented
-	MBC2,			
+	MBC2,			// Implemented
 	MBC3,			// Implemented
 	MBC5,
 	MBC6,

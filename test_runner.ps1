@@ -1,5 +1,5 @@
 param(
-    [string]$Emulator = ".\out\build\GCC\gb-emu-cpp.exe",
+    [string]$Emulator = ".\out\build\Windows-GCC\gb-emu-cpp.exe",
     [string]$TestRoot = ".\rom\Test Roms\mooneye-test-suite"
 )
 

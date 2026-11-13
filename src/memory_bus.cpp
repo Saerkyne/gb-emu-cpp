@@ -86,6 +86,10 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 		{
 			return cartridge_data[addr]; // For MBC3, bank 00 is always accessible
 		}
+		else if (cart_info.type == CART_TYPE::MBC5)
+		{
+			return cartridge_data[addr]; // For MBC5, bank 00 is always accessible
+		}
 		return cartridge_data[addr];
 	}
 
@@ -123,6 +127,14 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 			}
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
 			rom_bank = rom_bank & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
+			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
+			const uint32_t rom_address = bank_offset + (addr - 0x4000);
+			return cartridge_data[rom_address];
+		}
+		else if (cart_info.type == CART_TYPE::MBC5)
+		{
+			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
+			uint16_t rom_bank = rom_bank_number & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
 			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
@@ -224,6 +236,26 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 				}
 			}
 			return 0xFF; // Default case
+		}
+		else if (cart_info.type == CART_TYPE::MBC5)
+		{
+			if (!ram_enabled)
+			{
+				return 0xFF; // RAM is disabled, return 0xFF
+			}
+			if (cartridge_header->ram_size == 0x00)
+			{
+				return 0xFF; // No RAM available, return 0xFF
+			}
+			else if (cartridge_header->ram_size == 0x01)
+			{
+				return 0xFF; // Unused RAM size code, return 0xFF
+			}
+			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+			uint8_t masked_ram_bank_number = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+			const uint32_t bank_offset = masked_ram_bank_number * RAM_BANK_SIZE;
+			const uint32_t eram_address = (addr - 0xA000) + bank_offset;
+			return eram[eram_address];
 		}
 	}
 
@@ -369,6 +401,36 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		if (addr >= 0x6000 && addr <= 0x7FFF) // Latch Clock Data
 		{
 			rtc_latch_write(value);
+		}
+	}
+
+	if (cart_info.type == CART_TYPE::MBC5)
+	{
+		if (addr <= 0x1FFF) // RAM Enable
+		{
+			ram_enabled = (value & 0x0F) == 0x0A;
+		}
+		
+		if (addr >= 0x2000 && addr <= 0x2FFF) // ROM Bank Number (lower 8 bits)
+		{
+			rom_bank_number = (rom_bank_number & 0x100) | (value & 0xFF); // Lower 8 bits
+		}
+
+		if (addr >= 0x3000 && addr <= 0x3FFF) // ROM Bank Number (9th bit)
+		{
+			rom_bank_number = (rom_bank_number & 0xFF) | ((value & 0x01) << 8); // Combine with lower 8 bits
+		}
+
+		if (addr >= 0x4000 && addr <= 0x5FFF) // RAM Bank Number (4 bits)
+		{
+			ram_bank_number = value & 0x0F; // Only the lower 4 bits are used for MBC5 RAM bank number
+			// If the cart has rumble, bit 3 of the RAM bank register is tied to that circuitry.
+			// Setting 1 enables rumble, setting 0 disables it. The lower 3 bits are used for RAM bank selection.
+		}
+
+		if (addr >= 0x6000 && addr <= 0x7FFF) // Unused address space
+		{
+			return; // Ignore writes to this range for MBC5
 		}
 	}
 
