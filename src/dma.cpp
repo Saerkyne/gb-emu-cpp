@@ -58,7 +58,7 @@ void dma_advance_clocks()
 				
 				if (source_addr >= 0xE000)
 				{
-					source_addr = source_addr - 0x2000; // Mirror the source address to the 0xC000-0xDDFF range		
+					source_addr = source_addr - 0x2000; // Mirror the source address to the 0xC000-0xDFFF range		
 				}
 				uint8_t byte = memory_bus_read_inner(source_addr + dma_current_info.dma_counter - 2); // Subtracting 2 to allow for the initial writes to the DMA register and the first cycles of the transfer window
 				memory[dest + dma_current_info.dma_counter - 2] = byte; // Subtracting 2 to allow for the initial writes to the DMA register and the first cycles of the transfer window

@@ -15,14 +15,14 @@ uint8_t memory[MEMORY_SIZE];
 uint8_t eram[ERAM_SIZE];
 
 uint16_t rom_bank_number = 1; // Default to bank 1 for MBC1 and MBC3
-uint16_t mbc_bank2 = 0; // Used for MBC1 and MBC5
+uint16_t mbc_bank2 = 0; // Used for MBC1
 uint16_t ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 bool ram_enabled = false;
 bool rom_ram_mode_select = false;
 
 void memory_bus_reset() {
 	rom_bank_number = 1; // Default to bank 1 for MBC1, MBC2, MBC3s
-	mbc_bank2 = 0; // Used for MBC1 and MBC5
+	mbc_bank2 = 0; // Used for MBC1
 	ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 	ram_enabled = false;
 	rom_ram_mode_select = false;
@@ -557,18 +557,11 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 				return; // Unused RAM size code, ignore the write
 			}
 
-			if (rom_ram_mode_select)
-			{
-				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-				const uint16_t ram_bank = mbc_bank2 & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
-				const uint32_t offset = RAM_BANK_SIZE * ram_bank;
-				const uint32_t eram_address = offset + (addr - 0xA000);
-				eram[eram_address] = value;
-			}
-			else
-			{
-				eram[addr - 0xA000] = value;
-			}
+			const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+			const uint16_t ram_bank = ram_bank_number & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+			const uint32_t offset = RAM_BANK_SIZE * ram_bank;
+			const uint32_t eram_address = offset + (addr - 0xA000);
+			eram[eram_address] = value;
 		}
 	}
 
