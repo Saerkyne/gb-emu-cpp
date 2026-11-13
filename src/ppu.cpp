@@ -233,12 +233,16 @@ void ppu_check_stat_signal()
 		return;
 	}
 	const uint8_t ppu_mode = LCDS_PPU_MODE;
-	if (((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
+	const bool ppu_stat_signal =
+		(((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_1_V_BLANK) && LCDS_MODE_1_STAT_INTERRUPT_ENABLE) ||
-		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE);
-	if (ppu_stat_signal && !ppu_stat_signal_old)
+		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE));
+	if (ppu_stat_signal)
 	{
-		interrupt_raise_flag(INTERRUPT_FLAG_STAT);
+		if (ppu_stat_signal && !ppu_stat_signal_old)
+		{
+			interrupt_raise_flag(INTERRUPT_FLAG_STAT);
+		}
 	}
 	ppu_stat_signal_old = ppu_stat_signal;
 }

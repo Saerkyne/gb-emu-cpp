@@ -29,7 +29,7 @@ gfx_context* gfx_render_ctx = nullptr;
 
 uint32_t core_clock_counter = 0; // Global clock counter for the emulator core
 bool core_quit_requested = false; // Flag to indicate if the emulator core should quit
-std::chrono::system_clock::time_point core_time_frame_begin;
+std::chrono::steady_clock::time_point core_time_frame_begin;
 
 static char core_requested_rom_path[CART_MAX_PATH]; // Path of the ROM waiting to be loaded
 static bool core_rom_load_pending = false; // Set by core_request_rom_load, cleared by core_handle_rom_request
