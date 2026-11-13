@@ -53,15 +53,15 @@ void dma_advance_clocks()
 			}
 			else
 			{
+				const uint16_t dest = 0xFE00;
 				uint16_t source_addr = (dma_current_info.dma_source * 0x100); // OAM source is the high byte of the value written to 0xFF46, multiplied by 0x100 to equal 0xXX00-0xXX9F
+				
 				if (source_addr >= 0xE000)
 				{
-					debug_log("Warning: DMA transfer source address is in the restricted range 0xE000-0xFFFF. Preventing copy until specific case logic written.");
-					dma_current_info.dma_transfer_request = false; // Prevent the copy from happening until specific case logic is written to handle this
-					return;
+					source_addr = source_addr - 0x2000; // Mirror the source address to the 0xC000-0xDDFF range		
 				}
-				const uint16_t dest = 0xFE00;
-				memory[dest + dma_current_info.dma_counter - 2] = memory_bus_read_inner(source_addr + dma_current_info.dma_counter - 2); // Subtracting 2 to allow for the initial writes to the DMA register and the first cycles of the transfer window
+				uint8_t byte = memory_bus_read_inner(source_addr + dma_current_info.dma_counter - 2); // Subtracting 2 to allow for the initial writes to the DMA register and the first cycles of the transfer window
+				memory[dest + dma_current_info.dma_counter - 2] = byte; // Subtracting 2 to allow for the initial writes to the DMA register and the first cycles of the transfer window
 				dma_current_info.dma_counter++;
 				return;
 			}

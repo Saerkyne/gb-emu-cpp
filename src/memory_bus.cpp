@@ -416,7 +416,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 	{
 		if (addr <= 0x1FFF) // RAM Enable
 		{
-			ram_enabled = (value & 0xFF) == 0x0A; // full 8 bit compare
+			ram_enabled = value == 0x0A; // full 8 bit compare
 		}
 		
 		if (addr >= 0x2000 && addr <= 0x2FFF) // ROM Bank Number (lower 8 bits)
