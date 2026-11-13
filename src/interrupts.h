@@ -16,7 +16,6 @@ const uint16_t INTERRUPT_HANDLER_JOYPAD = 0x0060;
 
 extern bool interrupt_master_enable;
 extern uint8_t interrupt_enable_ime_delay;
-extern bool interrupt_stat_signal;
 
 void interrupt_enable_write(uint8_t value);
 void interrupt_flag_write(uint8_t value);

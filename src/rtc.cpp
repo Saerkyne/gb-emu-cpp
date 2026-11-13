@@ -1,0 +1,316 @@
+#include "rtc.h"
+#include <stdio.h>
+#include <string.h>
+
+rtc_clock_registers live_rtc_registers;
+rtc_clock_registers latch_rtc_registers;
+uint32_t rtc_subsecond_counter; // counts towards 4194304 ticks (1 second) for the RTC
+uint8_t rtc_previous_latch_write; // detects the state of the latch command sequence (0x00 -> 0x01 in 0x6000-0x7FFF)
+uint8_t rtc_save_bytes[48]; // 48 bytes for RTC save data
+
+bool  cart_has_rtc; // indicates if the cartridge has an RTC
+
+void rtc_tick_days_high() {
+	uint8_t curr_days_high = live_rtc_registers.rtc_days_high; // read the current days high value
+	if (curr_days_high & 0b00000001) // Check if day counter bit 8 is set
+	{
+		if (curr_days_high & 0b10000000) // Check if Day Counter Carry bit is set
+		{
+			live_rtc_registers.rtc_days_high = curr_days_high ^ 0b00000001; // Clear day counter bit 8, carry flag is sticky until cleared intentionally
+		}
+		else
+		{
+			live_rtc_registers.rtc_days_high = curr_days_high ^ 0b10000001; // Clear day counter bit 8 but set the Day Counter Carry bit
+		}
+	}
+	else
+	{
+		live_rtc_registers.rtc_days_high = curr_days_high + 1; // Increment days high
+	}
+}
+
+void rtc_tick_days_low() {
+	uint8_t curr_days_low = live_rtc_registers.rtc_days_low; // read the current days low value
+	if (curr_days_low < 255) // Check for days low overflow
+	{
+		live_rtc_registers.rtc_days_low++; // Increment days low
+	}
+	else if (curr_days_low == 255)
+	{
+		live_rtc_registers.rtc_days_low = 0; // Reset days low to 0
+		rtc_tick_days_high(); // Increment days high
+	}
+}
+
+void rtc_tick_hours() {
+	uint8_t curr_hours = live_rtc_registers.rtc_hours; // read the current hours value
+	if (curr_hours < 23) // Check for hours overflow
+	{
+		live_rtc_registers.rtc_hours++; // Increment hours
+	}
+	else if (curr_hours == 23)
+	{
+		live_rtc_registers.rtc_hours = 0; // Reset hours to 0
+		rtc_tick_days_low(); // Increment days low
+	}
+	else if (curr_hours >= 24 && curr_hours <= 30)
+	{
+		live_rtc_registers.rtc_hours++; // Increment hours, do not increment days low
+	}
+	else if (curr_hours == 31)
+	{
+		live_rtc_registers.rtc_hours = 0; // Reset hours to 0, do not increment days low
+	}
+}
+
+void rtc_tick_minutes() {
+	uint8_t curr_minutes = live_rtc_registers.rtc_minutes; // read the current minutes value
+	if (curr_minutes < 59) // Check for minutes overflow
+	{
+		live_rtc_registers.rtc_minutes++; // Increment minutes
+	}
+	else if (curr_minutes == 59)
+	{
+		live_rtc_registers.rtc_minutes = 0; // Reset minutes to 0
+		rtc_tick_hours(); // Increment hours
+	}
+	else if (curr_minutes >= 60 && curr_minutes <= 62)
+	{
+		live_rtc_registers.rtc_minutes++; // Increment minutes, do not increment hours
+	}
+	else if (curr_minutes == 63)
+	{
+		live_rtc_registers.rtc_minutes = 0; // Reset minutes to 0, do not increment hours
+	}
+}
+
+void rtc_tick_seconds() {
+	uint8_t curr_seconds = live_rtc_registers.rtc_seconds; // read the current seconds value
+	if (curr_seconds < 59) // Check for seconds overflow
+	{
+		live_rtc_registers.rtc_seconds++; // Increment seconds
+	}
+	else if (curr_seconds == 59)
+	{
+		live_rtc_registers.rtc_seconds = 0; // Reset seconds to 0
+		rtc_tick_minutes(); // Increment minutes
+	}
+	else if (curr_seconds >= 60 && curr_seconds <= 62)
+	{
+		live_rtc_registers.rtc_seconds++; // Increment seconds, do not increment minutes
+	}
+	else if (curr_seconds == 63)
+	{
+		live_rtc_registers.rtc_seconds = 0; // Reset seconds to 0, do not increment minutes
+	}
+
+}
+
+void rtc_tick() {
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+	
+	rtc_tick_seconds(); // Increment seconds, which will cascade to minutes, hours, and days as needed
+}
+
+void rtc_advance_clocks(const uint8_t cycles) {
+	if (!cart_has_rtc) 
+	{
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+
+	if (live_rtc_registers.rtc_days_high & 0b01000000) 
+	{ 
+		return; // If the RTC is halted, do not advance the RTC clock
+	}
+
+	rtc_subsecond_counter += cycles; // Increment the subsecond counter by the number of cycles
+	if (rtc_subsecond_counter >= 4194304) // Check if the subsecond counter has reached 1 second (4194304 cycles)
+	{
+		rtc_subsecond_counter = rtc_subsecond_counter - 4194304; // Reset the subsecond counter by subtracting 4194304
+		rtc_tick(); // Increment the RTC registers
+	}
+}
+
+void rtc_latch_write(const uint8_t value) {
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+
+	if (rtc_previous_latch_write == 0x00 && value == 0x01)
+	{
+		latch_rtc_registers = live_rtc_registers; // Latch the current RTC registers into the latch registers
+	}
+	rtc_previous_latch_write = value; // Update the previous latch write value
+}
+
+void rtc_register_write(const uint16_t selector, const uint8_t value) {
+
+	if (selector == 0x08) // RTC write live seconds register
+	{
+		uint8_t masked_seconds = value & 0b00111111; // Mask the value to ensure it is within 0-63
+		live_rtc_registers.rtc_seconds = masked_seconds;
+		rtc_subsecond_counter = 0; // Reset the subsecond counter when seconds are written
+	}
+	if (selector == 0x09) // RTC write live minutes register
+	{
+		uint8_t masked_minutes = value & 0b00111111; // Mask the value to ensure it is within 0-63
+		live_rtc_registers.rtc_minutes = masked_minutes;
+	}
+	if (selector == 0x0A) // RTC write live hours register
+	{
+		uint8_t masked_hours = value & 0b00011111; // Mask the value to ensure it is within 0-31
+		live_rtc_registers.rtc_hours = masked_hours;
+	}
+	if (selector == 0x0B) // RTC write live days low register
+	{
+		live_rtc_registers.rtc_days_low = value; // No masking needed, as it is a full byte
+	}
+	if (selector == 0x0C) // RTC write live days high register
+	{
+		uint8_t masked_days_high = value & 0b11000001; // Mask the value to ensure only bits 0, 6, and 7 are used
+		live_rtc_registers.rtc_days_high = masked_days_high; 
+	}
+}
+
+uint8_t rtc_register_read(const uint16_t selector) {
+	if (selector == 0x08)
+	{
+		return latch_rtc_registers.rtc_seconds;
+	}
+	if (selector == 0x09)
+	{
+		return latch_rtc_registers.rtc_minutes;
+	}
+	if (selector == 0x0A)
+	{
+		return latch_rtc_registers.rtc_hours;
+	}
+	if (selector == 0x0B)
+	{
+		return latch_rtc_registers.rtc_days_low;
+	}
+	if (selector == 0x0C)
+	{
+		return latch_rtc_registers.rtc_days_high;
+	}
+	return 0xFF; // Return a default value if the selector does not match any RTC register
+}
+
+uint64_t rtc_load_save_bytes(const uint64_t utc_timestamp, const uint8_t footer_length) {
+	
+	if (footer_length != 48 && footer_length != 44) 
+	{
+		printf("Warning: RTC save footer length is not 48 or 44 bytes. Registers are not loaded, current UTC time returned.\n");
+		return utc_timestamp;
+	}
+	else
+	{
+		live_rtc_registers.rtc_seconds = (rtc_save_bytes[0]) & 0x3F;
+		live_rtc_registers.rtc_minutes = (rtc_save_bytes[4]) & 0x3F;
+		live_rtc_registers.rtc_hours = (rtc_save_bytes[8]) & 0x1F;
+		live_rtc_registers.rtc_days_low = (rtc_save_bytes[12]) & 0xFF;
+		live_rtc_registers.rtc_days_high = (rtc_save_bytes[16]) & 0xC1;
+		latch_rtc_registers.rtc_seconds = (rtc_save_bytes[20]) & 0x3F;
+		latch_rtc_registers.rtc_minutes = (rtc_save_bytes[24]) & 0x3F;
+		latch_rtc_registers.rtc_hours = (rtc_save_bytes[28]) & 0x1F;
+		latch_rtc_registers.rtc_days_low = (rtc_save_bytes[32]) & 0xFF;
+		latch_rtc_registers.rtc_days_high = (rtc_save_bytes[36]) & 0xC1;
+
+		if (footer_length == 48)
+		{
+			uint64_t loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24) | ((uint64_t)rtc_save_bytes[44] << 32) | ((uint64_t)rtc_save_bytes[45] << 40) | ((uint64_t)rtc_save_bytes[46] << 48) | ((uint64_t)rtc_save_bytes[47] << 56);
+
+			return loaded_utc_timestamp;
+		}
+		else
+		{
+			uint64_t  loaded_utc_timestamp = (uint64_t)rtc_save_bytes[40] | ((uint64_t)rtc_save_bytes[41] << 8) | ((uint64_t)rtc_save_bytes[42] << 16) | ((uint64_t)rtc_save_bytes[43] << 24);
+			return loaded_utc_timestamp;
+		}
+	}
+}
+void rtc_create_save_bytes(const uint64_t utc_timestamp) {
+	// Create a 48-byte value representing the current state of the RTC registers
+	// only exists as a 48 or 44 byte value by convention added to the end of a .sav file
+	// Every value is little endian and 4 bytes long. Each register is only one byte, 
+	// so values are padded with 0x00 to fill the 4 bytes. The order of the registers is as follows:
+	// Seconds, Minutes, Hours, Days Low, Days High, UTC timestamp, padding out to 48 bytes
+
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+	memset(rtc_save_bytes, 0, sizeof(rtc_save_bytes)); // Initialize the save bytes array to zero
+
+	rtc_save_bytes[0] = live_rtc_registers.rtc_seconds;
+	rtc_save_bytes[4] = live_rtc_registers.rtc_minutes;
+	rtc_save_bytes[8] = live_rtc_registers.rtc_hours;
+	rtc_save_bytes[12] = live_rtc_registers.rtc_days_low;
+	rtc_save_bytes[16] = live_rtc_registers.rtc_days_high;
+	rtc_save_bytes[20] = latch_rtc_registers.rtc_seconds;
+	rtc_save_bytes[24] = latch_rtc_registers.rtc_minutes;
+	rtc_save_bytes[28] = latch_rtc_registers.rtc_hours;
+	rtc_save_bytes[32] = latch_rtc_registers.rtc_days_low;
+	rtc_save_bytes[36] = latch_rtc_registers.rtc_days_high;
+	rtc_save_bytes[40] = utc_timestamp & 0xFF; // UTC timestamp low byte
+	rtc_save_bytes[41] = (utc_timestamp & 0xFF00) >> 8;
+	rtc_save_bytes[42] = (utc_timestamp & 0xFF0000) >> 16;
+	rtc_save_bytes[43] = (utc_timestamp & 0xFF000000) >> 24; 
+	rtc_save_bytes[44] = (utc_timestamp & 0xFF00000000) >> 32;
+	rtc_save_bytes[45] = (utc_timestamp & 0xFF0000000000) >> 40;
+	rtc_save_bytes[46] = (utc_timestamp & 0xFF000000000000) >> 48;
+	rtc_save_bytes[47] = (utc_timestamp & 0xFF00000000000000) >> 56;
+}
+
+void rtc_catch_up(const uint64_t seconds) {
+	if (!cart_has_rtc) {
+		return; // If the cartridge doesn't have an RTC, do nothing
+	}
+	if (live_rtc_registers.rtc_days_high & 0b01000000)
+	{
+		return; // If the RTC is halted, do not catch up the RTC clock
+	}
+	for (uint64_t i = 0; i < seconds; i++) {
+		rtc_tick(); // Increment the RTC registers for each second
+	}
+}
+
+void rtc_init() {
+	
+	// Initialize the live RTC registers
+	live_rtc_registers.rtc_seconds = 0;
+	live_rtc_registers.rtc_minutes = 0;
+	live_rtc_registers.rtc_hours = 0;
+	live_rtc_registers.rtc_days_low = 0;
+	live_rtc_registers.rtc_days_high = 0;
+
+	// Initialize the latched RTC registers
+	latch_rtc_registers.rtc_seconds = 0;
+	latch_rtc_registers.rtc_minutes = 0;
+	latch_rtc_registers.rtc_hours = 0;
+	latch_rtc_registers.rtc_days_low = 0;
+	latch_rtc_registers.rtc_days_high = 0;
+
+	// Initialize subsecond counter, previous latch value, and cart_has_rtc flag
+	rtc_subsecond_counter = 0;
+	rtc_previous_latch_write = 0xFF; // Set to an invalid value to ensure the first write is not treated as a latch command
+	cart_has_rtc = true;
+}
+
+void rtc_reset() {
+	live_rtc_registers.rtc_seconds = 0;
+	live_rtc_registers.rtc_minutes = 0;
+	live_rtc_registers.rtc_hours = 0;
+	live_rtc_registers.rtc_days_low = 0;
+	live_rtc_registers.rtc_days_high = 0;
+	latch_rtc_registers.rtc_seconds = 0;
+	latch_rtc_registers.rtc_minutes = 0;
+	latch_rtc_registers.rtc_hours = 0;
+	latch_rtc_registers.rtc_days_low = 0;
+	latch_rtc_registers.rtc_days_high = 0;
+	rtc_subsecond_counter = 0;
+	rtc_previous_latch_write = 0xFF; // Reset to an invalid value to ensure the first write is not treated as a latch command
+	cart_has_rtc = false; // Reset the cart_has_rtc flag to false
+	
+}

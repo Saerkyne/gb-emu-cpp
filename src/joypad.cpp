@@ -11,6 +11,18 @@ bool joy_dpad_left = false;
 bool joy_dpad_up = false;
 bool joy_dpad_down = false;
 
+void joypad_reset()
+{
+	joy_button_a = false;
+	joy_button_b = false;
+	joy_button_select = false;
+	joy_button_start = false;
+	joy_dpad_right = false;
+	joy_dpad_left = false;
+	joy_dpad_up = false;
+	joy_dpad_down = false;
+}
+
 uint8_t joypad_read_input()
 {
 	uint8_t joypad_register = memory[JOYPAD_REGISTER_ADDRESS];

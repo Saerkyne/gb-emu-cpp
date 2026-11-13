@@ -1,7 +1,10 @@
 #include "ppu.h"
+#include "cpu.h" // for logging
+#include "debug_log.h" // for logging
 #include "emulator_core.h"
 #include "interrupts.h"
 #include "memory_bus.h"
+#include <cstdio>
 
 lcd_registers* ppu_lcd_registers = (lcd_registers*)(memory + 0xFF40);
 uint8_t frame_pixels[LCD_PIXELS_WIDTH * LCD_PIXELS_HEIGHT];
@@ -38,6 +41,7 @@ uint8_t ppu_pixel_fifo_occupancy = 0;
 bool ppu_fetcher_first_scanline_steps = false;
 int16_t ppu_shifter_pixel_x = 0;
 uint8_t ppu_discard_pixels = 0;
+bool ppu_stat_signal_old = false; // for storing previous stat line in ppu_check_stat_signal. False is low, True is high.
 
 const SDL_Color ppu_lcd_color_lit = { 223, 230, 179, 255 };
 const SDL_Color ppu_gb_colors[4] = {
@@ -97,6 +101,24 @@ void ppu_reset()
 	ppu_lcd_registers->wy = 0;
 	ppu_scanline_dot = 0;
 	ppu_first_frame_after_lcd_enable = false;
+
+	ppu_fetcher_reset();
+
+	ppu_oam_search_index = 0;
+	ppu_oam_buffer_count = 0;
+	for (int i = 0; i < 10; i++) {
+		ppu_oam_buffer[i] = { 0, false };
+	}
+	ppu_oam_sprite_fetcher_index = 0;
+
+	ppu_shifter_pixel_x = 0;
+	ppu_discard_pixels = 0;
+	ppu_fetcher_first_scanline_steps = false;
+	for (int i = 0; i < 8; i++) {
+		ppu_pixel_buffer[i] = 0;
+	}
+	
+	
 }
 
 void ppu_advance_clocks(const uint8_t clocks)
@@ -125,6 +147,7 @@ void ppu_advance_clocks(const uint8_t clocks)
 			if (LCDS_PPU_MODE != LCDS_MODE_3_DRAWING)
 			{
 				ppu_clocks_spent_in_mode3[ppu_lcd_registers->ly] = ppu_scanline_dot;
+				ppu_scanline_dot++; // Added as a test for timing changes and HALT timings
 				continue;
 			}
 		}
@@ -212,10 +235,12 @@ void ppu_check_stat_signal()
 	const uint8_t ppu_mode = LCDS_PPU_MODE;
 	if (((ppu_mode == LCDS_MODE_2_OAM_SEARCH) && LCDS_MODE_2_STAT_INTERRUPT_ENABLE) ||
 		((ppu_mode == LCDS_MODE_1_V_BLANK) && LCDS_MODE_1_STAT_INTERRUPT_ENABLE) ||
-		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE))
+		((ppu_mode == LCDS_MODE_0_H_BLANK) && LCDS_MODE_0_STAT_INTERRUPT_ENABLE);
+	if (ppu_stat_signal && !ppu_stat_signal_old)
 	{
 		interrupt_raise_flag(INTERRUPT_FLAG_STAT);
 	}
+	ppu_stat_signal_old = ppu_stat_signal;
 }
 
 void ppu_on_lyc_write(const uint8_t value)
@@ -256,6 +281,9 @@ void ppu_set_lcd_mode(uint8_t new_mode)
 void ppu_on_lcd_control_write(const uint8_t value)
 {
 	const bool prev_lcd_enabled = LCDC_ENABLE_LCD;
+	debug_log("LCDC write: PC=%04X LY=%d dot=%d old=%02X new=%02X\n",
+		cpu_registers.pc, ppu_lcd_registers->ly, ppu_scanline_dot,
+		ppu_lcd_registers->control, value);
 	ppu_lcd_registers->control = value;
 	const bool new_lcd_enabled = LCDC_ENABLE_LCD;
 	if (new_lcd_enabled != prev_lcd_enabled)
@@ -287,38 +315,55 @@ void ppu_on_palette_write(const uint16_t addr)
 	if (addr == 0xFF49) extract_palette(addr, sprite_palette_1);
 }
 
+// Address of pixel (x,y) inside a locked texture. Pitch is the length of one row in bytes.
+// SDL can pad rows beyond width * 4 (some Direct3D drivers do), so rows are always stepped by pitch.
+static uint8_t* render_pixel_address(void* pixels, const int pitch, const int x, const int y) {
+	return ((uint8_t*)pixels) + (y * pitch) + (x * 4);
+}
+
 void render_frame()
 {
-	void* pixels = NULL;
-	uint8_t* base = NULL;
-	int pitch = 0;
-	int result = SDL_LockTexture(gfx_render_ctx->texture, NULL, &pixels, &pitch);
+
 	SDL_SetRenderDrawColor(gfx_render_ctx->renderer, ppu_lcd_color_lit.r, ppu_lcd_color_lit.g, ppu_lcd_color_lit.b, ppu_lcd_color_lit.a);
-	result = SDL_RenderClear(gfx_render_ctx->renderer);
+	SDL_RenderClear(gfx_render_ctx->renderer);
 	if (!LCDC_ENABLE_LCD || ppu_first_frame_after_lcd_enable)
 	{
 		SDL_RenderPresent(gfx_render_ctx->renderer);
 		return;
 	}
 
-	for (uint16_t y = 0; y < LCD_PIXELS_HEIGHT; y++)
+	void* pixels = NULL;
+	int pitch = 0;
+	if (SDL_LockTexture(gfx_render_ctx->texture, NULL, &pixels, &pitch))
 	{
-		for (uint16_t x = 0; x < LCD_PIXELS_WIDTH; x++)
+		for (uint16_t y = 0; y < LCD_PIXELS_HEIGHT; y++)
 		{
-			const uint32_t index = (y * LCD_PIXELS_WIDTH) + x;
-			const uint8_t color_index = frame_pixels[index];
-			const SDL_Color& color = ppu_gb_colors[color_index];
-			base = ((uint8_t*)pixels) + (4 * ((y * LCD_PIXELS_WIDTH * PPU_RENDER_SCALE) + x));
-			base[0] = color.a;
-			base[1] = color.b;
-			base[2] = color.g;
-			base[3] = color.r;
+			for (uint16_t x = 0; x < LCD_PIXELS_WIDTH; x++)
+			{
+				const uint32_t index = (y * LCD_PIXELS_WIDTH) + x;
+				const uint8_t color_index = frame_pixels[index];
+				const SDL_Color& color = ppu_gb_colors[color_index];
+				uint8_t* base = render_pixel_address(pixels, pitch, x, y);
+				base[0] = color.a;
+				base[1] = color.b;
+				base[2] = color.g;
+				base[3] = color.r;
+			}
+		}
+
+		SDL_UnlockTexture(gfx_render_ctx->texture);
+		SDL_FRect src_rect = { 0, 0, LCD_PIXELS_WIDTH, LCD_PIXELS_HEIGHT };
+		SDL_RenderTexture(gfx_render_ctx->renderer, gfx_render_ctx->texture, &src_rect, NULL);
+	}
+	else
+	{
+		static bool lock_error_reported = false;
+		if (!lock_error_reported)
+		{
+			printf("Unable to lock the screen texture: %s\n", SDL_GetError());
+			lock_error_reported = true;
 		}
 	}
-
-	SDL_UnlockTexture(gfx_render_ctx->texture);
-	SDL_FRect src_rect = { 0, 0, LCD_PIXELS_WIDTH, LCD_PIXELS_HEIGHT };
-	result = SDL_RenderTexture(gfx_render_ctx->renderer, gfx_render_ctx->texture, &src_rect, NULL);
 	SDL_RenderPresent(gfx_render_ctx->renderer);
 
 	memset(frame_pixels, 0, LCD_PIXELS_WIDTH * LCD_PIXELS_HEIGHT);
@@ -329,22 +374,25 @@ void render_debug_background(void* pixels, int pitch);
 void render_debug_sprites(void* pixels, int pitch);
 void render_debug_window(void* pixels, int pitch);
 void render_debug_viewport(void* pixels, int pitch);
-void render_debug_timing(void* pixels);
+void render_debug_timing(void* pixels, int pitch);
 
 void render_debug()
 {
 	void* pixels = nullptr;
 	int pitch = 0;
 
-	int results = SDL_LockTexture(gfx_debug_ctx->texture, NULL, &pixels, &pitch);
-	results = SDL_RenderClear(gfx_debug_ctx->renderer);
+	if (!SDL_LockTexture(gfx_debug_ctx->texture, NULL, &pixels, &pitch))
+	{
+		return; // Nothing to draw into this frame
+	}
+	SDL_RenderClear(gfx_debug_ctx->renderer);
 
 	render_debug_vram(pixels, pitch);
 	render_debug_background(pixels, pitch);
 	render_debug_sprites(pixels, pitch);
 	render_debug_window(pixels, pitch);
 	render_debug_viewport(pixels, pitch);
-	render_debug_timing(pixels);
+	render_debug_timing(pixels, pitch);
 
 	SDL_UnlockTexture(gfx_debug_ctx->texture);
 	SDL_FRect rect = { 0, 0, 512, 512 };
@@ -368,7 +416,7 @@ void ppu_oam_search_tick()
 	{
 		return;
 	}
-	const uint8_t* tile_data = memory + 0x8000;
+	// const uint8_t* tile_data = memory + 0x8000;
 	const uint8_t* oam_sprite_data = memory + OBJECT_ATTRIBUTE_ADDRESS;
 	const uint8_t sprite_height = LCDC_SPRITE_SIZE ? 16 : 8;
 	const uint8_t attribute_data_index = ppu_oam_search_index * 4;
@@ -620,8 +668,7 @@ void render_debug_vram(void* pixels, int pitch)
 			{
 				const uint32_t screen_x = (tile_x * 8) + column + 256;
 				const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
-				const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
-				uint8_t* base = ((uint8_t*)pixels) + pixel_address;
+				uint8_t* base = render_pixel_address(pixels, pitch, screen_x, screen_y);
 				base[0] = color.a;
 				base[1] = color.b;
 				base[2] = color.g;
@@ -660,8 +707,7 @@ void render_debug_background(void* pixels, int pitch)
 				{
 					const uint32_t screen_x = (tile_x * 8) + column;
 					const SDL_Color& color = ppu_gb_colors_grey[ppu_pixel_buffer[column]];
-					const uint32_t pixel_address = (4 * ((screen_y * 512) + screen_x));
-					uint8_t* base = ((uint8_t*)pixels) + pixel_address;
+					uint8_t* base = render_pixel_address(pixels, pitch, screen_x, screen_y);
 					base[0] = color.a;
 					base[1] = color.b;
 					base[2] = color.g;
@@ -700,7 +746,7 @@ void render_debug_sprites(void* pixels, int pitch)
 					const uint8_t pixel_y = (pos_y + y);
 					const uint8_t pixel_x = (pos_x + x);
 
-					uint8_t* base = ((uint8_t*)pixels) + (4 * ((pixel_y * 512) + pixel_x));
+					uint8_t* base = render_pixel_address(pixels, pitch, pixel_x, pixel_y);
 					base[1] = 0;
 					base[2] = 0;
 					base[3] = 255;
@@ -751,7 +797,7 @@ void render_debug_sprites(void* pixels, int pitch)
 						continue;
 					}
 					const SDL_Color& color = ppu_gb_colors_red[ppu_pixel_buffer[sprite_flip_x ? 7 - row : row]];
-					uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + screen_x));
+					uint8_t* base = render_pixel_address(pixels, pitch, screen_x, screen_y);
 					base[0] = color.a;
 					base[1] = color.b;
 					base[2] = color.g;
@@ -785,7 +831,7 @@ void render_debug_window(void* pixels, int pitch)
 			{
 				const uint8_t xpos = scx + x;
 				const uint8_t ypos = scy + y;
-				uint8_t* base = ((uint8_t*)pixels) + (4 * ((ypos * 512) + xpos));
+				uint8_t* base = render_pixel_address(pixels, pitch, xpos, ypos);
 				base[1] = 255;
 			}
 		}
@@ -823,7 +869,7 @@ void render_debug_window(void* pixels, int pitch)
 					{
 						const uint8_t screen_x = scx + wx - 7 + (tile_x * 8) + column;
 						const SDL_Color& color = ppu_gb_colors_blue[ppu_pixel_buffer[column]];
-						uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + screen_x));
+						uint8_t* base = render_pixel_address(pixels, pitch, screen_x, screen_y);
 						base[0] = color.a;
 						base[1] = color.b;
 						base[2] = color.g;
@@ -843,23 +889,23 @@ void render_debug_viewport(void* pixels, int pitch)
 	{
 		const uint8_t wrap_x = scx + x;
 		const uint8_t wrap_y = scy + 144;
-		uint8_t* base = ((uint8_t*)pixels) + (4 * ((scy * 512) + wrap_x));
+		uint8_t* base = render_pixel_address(pixels, pitch, wrap_x, scy);
 		base[3] = 255;
-		base = ((uint8_t*)pixels) + (4 * ((wrap_y * 512) + wrap_x));
+		base = render_pixel_address(pixels, pitch, wrap_x, wrap_y);
 		base[3] = 255;
 	}
 	for (uint32_t y = 0; y < LCD_PIXELS_HEIGHT; y++)
 	{
 		const uint8_t wrap_x = scx + 160;
 		const uint8_t wrap_y = scy + y;
-		uint8_t* base = ((uint8_t*)pixels) + (4 * ((wrap_y * 512) + scx));
+		uint8_t* base = render_pixel_address(pixels, pitch, scx, wrap_y);
 		base[3] = 255;
-		base = ((uint8_t*)pixels) + (4 * ((wrap_y * 512) + wrap_x));
+		base = render_pixel_address(pixels, pitch, wrap_x, wrap_y);
 		base[3] = 255;
 	}
 }
 
-void render_debug_timing(void* pixels)
+void render_debug_timing(void* pixels, int pitch)
 {
 	for (uint8_t row = 0; row < 154; row++)
 	{
@@ -869,7 +915,7 @@ void render_debug_timing(void* pixels)
 		for (uint16_t column = start; column < end; column++)
 		{
 			const SDL_Color color = { 255, 255, 0, 255 }; // OAM Search = Yellow
-			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			uint8_t* base = render_pixel_address(pixels, pitch, column, screen_y);
 			base[0] = color.a;
 			base[1] = color.b;
 			base[2] = color.g;
@@ -880,7 +926,7 @@ void render_debug_timing(void* pixels)
 		for (uint16_t column = start; column < end; column++)
 		{
 			const SDL_Color color = { 0, 255, 0, 255 }; // Draw = Green
-			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			uint8_t* base = render_pixel_address(pixels, pitch, column, screen_y);
 			base[0] = color.a;
 			base[1] = color.b;
 			base[2] = color.g;
@@ -891,7 +937,7 @@ void render_debug_timing(void* pixels)
 		for (uint16_t column = start; column < end; column++)
 		{
 			const SDL_Color color = { 128, 128, 128, 255 }; // H-Blank = Grey
-			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			uint8_t* base = render_pixel_address(pixels, pitch, column, screen_y);
 			base[0] = color.a;
 			base[1] = color.b;
 			base[2] = color.g;
@@ -902,7 +948,7 @@ void render_debug_timing(void* pixels)
 		for (uint16_t column = start; column < end; column++)
 		{
 			const SDL_Color color = { 0, 255, 255, 255 }; // V-Blank = Teal
-			uint8_t* base = ((uint8_t*)pixels) + (4 * ((screen_y * 512) + column));
+			uint8_t* base = render_pixel_address(pixels, pitch, column, screen_y);
 			base[0] = color.a;
 			base[1] = color.b;
 			base[2] = color.g;

@@ -1,10 +1,10 @@
 #pragma once
 
 enum CART_TYPE {
-	NO_MBC,
-	MBC1,
-	MBC2,
-	MBC3,
+	NO_MBC,			// Implemented
+	MBC1,			// Implemented
+	MBC2,			// Implemented
+	MBC3,			// Implemented
 	MBC5,
 	MBC6,
 	MBC7,
