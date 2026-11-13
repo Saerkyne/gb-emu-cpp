@@ -48,7 +48,7 @@ add_executable(gb-emu-cpp
   src/ppu.h
   src/timer.cpp
   src/timer.h
-)
+ "src/apu.h" "src/apu.cpp")
 
 target_link_libraries(gb-emu-cpp PRIVATE SDL3::SDL3)
 
