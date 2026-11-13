@@ -15,14 +15,14 @@ uint8_t memory[MEMORY_SIZE];
 uint8_t eram[ERAM_SIZE];
 
 uint16_t rom_bank_number = 1; // Default to bank 1 for MBC1 and MBC3
-uint16_t mbc1_bank2 = 0; // Used for MBC1
+uint16_t mbc_bank2 = 0; // Used for MBC1 and MBC5
 uint16_t ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 bool ram_enabled = false;
 bool rom_ram_mode_select = false;
 
 void memory_bus_reset() {
 	rom_bank_number = 1; // Default to bank 1 for MBC1, MBC2, MBC3s
-	mbc1_bank2 = 0; // Used for MBC1
+	mbc_bank2 = 0; // Used for MBC1 and MBC5
 	ram_bank_number = 0; // Used as a selector not just bank number in MBC3
 	ram_enabled = false;
 	rom_ram_mode_select = false;
@@ -74,7 +74,7 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 		{
 			if (rom_ram_mode_select)
 			{
-				uint8_t rom_bank = (mbc1_bank2 << 5) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
+				uint8_t rom_bank = (mbc_bank2 << 5) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Mask the rom bank number based on the ROM size
 				return  cartridge_data[rom_bank * 0x4000 + (addr - 0x0000)]; // Calculate the address based on the selected ROM bank
 			}
 			return cartridge_data[addr]; // For MBC1, bank 00 is always accessible
@@ -105,7 +105,7 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 		else if (cart_info.type == CART_TYPE::MBC1) 
 		{
 			const uint16_t ROM_BANK_SIZE = 0x4000; // 16k per ROM bank
-			uint8_t rom_bank = ((mbc1_bank2 << 5) | rom_bank_number) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
+			uint8_t rom_bank = ((mbc_bank2 << 5) | rom_bank_number) & ((1 << (cartridge_header->rom_size + 1)) - 1); // Combine the lower 5 bits with the upper 2 bits to form a 7-bit bank number
 			const uint32_t bank_offset = rom_bank * ROM_BANK_SIZE;
 			const uint32_t rom_address = bank_offset + (addr - 0x4000);
 			return cartridge_data[rom_address];
@@ -176,7 +176,7 @@ uint8_t memory_bus_read_inner(const uint16_t addr)
 			if (rom_ram_mode_select) // RAM banking mode
 			{
 				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-				const uint16_t ram_bank = mbc1_bank2 & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+				const uint16_t ram_bank = mbc_bank2 & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
 				const uint32_t bank_offset = ram_bank * RAM_BANK_SIZE;
 				const uint32_t eram_address = (addr - 0xA000) + bank_offset;
 				return eram[eram_address];
@@ -353,7 +353,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 		if (addr >= 0x4000 && addr <= 0x5FFF) // ROM Bank Register 2 (2 bits) or RAM Bank Register (2 bits)
 		{
-			mbc1_bank2 = value & 0b00000011; // This is a 2-bit register
+			mbc_bank2 = value & 0b00000011; // This is a 2-bit register
 		}
 
 		if (addr >= 0x6000 && addr <= 0x7FFF) 
@@ -416,7 +416,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 	{
 		if (addr <= 0x1FFF) // RAM Enable
 		{
-			ram_enabled = (value & 0x0F) == 0x0A;
+			ram_enabled = (value & 0xFF) == 0x0A; // full 8 bit compare
 		}
 		
 		if (addr >= 0x2000 && addr <= 0x2FFF) // ROM Bank Number (lower 8 bits)
@@ -476,7 +476,7 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			if (rom_ram_mode_select)
 			{
 				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
-				const uint16_t ram_bank = mbc1_bank2 & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+				const uint16_t ram_bank = mbc_bank2 & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
 				const uint32_t offset = RAM_BANK_SIZE * ram_bank;
 				const uint32_t eram_address = offset + (addr - 0xA000);
 				eram[eram_address] = value;
@@ -540,6 +540,35 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 				}
 			}
 			return; // Exit after handling MBC3 RAM/RTC write
+		}
+		else if (cart_info.type == CART_TYPE::MBC5)
+		{
+			if (!ram_enabled)
+			{
+				return; // RAM is disabled, ignore the write
+			}
+
+			if (cartridge_header->ram_size == 0x00)
+			{
+				return; // No RAM available, ignore the write
+			}
+			else if (cartridge_header->ram_size == 0x01)
+			{
+				return; // Unused RAM size code, ignore the write
+			}
+
+			if (rom_ram_mode_select)
+			{
+				const uint16_t RAM_BANK_SIZE = 0x2000; // 8k per RAM bank
+				const uint16_t ram_bank = mbc_bank2 & (cart_ram_size[cartridge_header->ram_size].bank_count - 1); // Mask the ram_bank_number based on the number of banks available
+				const uint32_t offset = RAM_BANK_SIZE * ram_bank;
+				const uint32_t eram_address = offset + (addr - 0xA000);
+				eram[eram_address] = value;
+			}
+			else
+			{
+				eram[addr - 0xA000] = value;
+			}
 		}
 	}
 
