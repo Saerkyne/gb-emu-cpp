@@ -10,9 +10,9 @@
 #include <cstdio>
 
 
-// ---- Temporary FFL trace (remove when done) ----
+// ---- Temporary trace (remove when done) ----
 extern uint16_t ppu_scanline_dot;
-static int trace_state = 0;   // 0 = waiting for 0x043D, 1 = tracing, 2 = finished
+static int trace_state = 0;   // 0 = waiting for start, 1 = tracing, 2 = finished
 static int trace_lines = 0;
 // ------------------------------------------------
 
@@ -24,8 +24,6 @@ uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop
 bool cpu_halt_bug = false;
 bool cpu_debug_instructions = true;
 bool ime_delay_occured = false; // Added to test IME set bug, used in conditional below.
-bool tempdebugarmed = false;
-int tempdebugcounter = 0;
 
 void cpu_reset() {
 	// AFter executing boot rom, registers should be set to the following values:
@@ -51,80 +49,81 @@ void cpu_reset() {
 }
 
 void cpu_tick() {
-	const uint16_t pc_before = cpu_registers.pc;
-	const bool halted_at_start = cpu_halt_count != 0;
+	if (debug_mode)
+	{
+		const uint16_t pc_before = cpu_registers.pc;
+		const bool halted_at_start = cpu_halt_count != 0;
 
-	// Arm on the first call to VRAMEnable, stop at the font loop or after 5000 lines
-	if (trace_state == 0 && !halted_at_start && pc_before == 0x0048) {
-		trace_state = 1;
-		debug_log("TRACE START\n");
-	}
-	if (trace_state == 1 && !halted_at_start && trace_lines >= 600) {
-		trace_state = 2;
-		debug_log("TRACE END at PC=%04X\n", pc_before);
-	}
+		// Arm on the first call to VRAMEnable, stop at the font loop or after 5000 lines
+		if (trace_state == 0 && !halted_at_start && pc_before == 0x0048) {
+			trace_state = 1;
+			debug_log("TRACE START\n");
+		}
+		if (trace_state == 1 && !halted_at_start && trace_lines >= 600) {
+			trace_state = 2;
+			debug_log("TRACE END at PC=%04X\n", pc_before);
+		}
 
-	if (cpu_halt_count == 0) {
-		cpu_fetch();
-		cpu_execute();
-		cpu_instruction_counter++;
+		if (cpu_halt_count == 0) {
+			cpu_fetch();
+			cpu_execute();
+			cpu_instruction_counter++;
+
+			if (trace_state == 1) {
+				debug_log("%04X: %02X %02X %02X | AF=%04X BC=%04X DE=%04X HL=%04X SP=%04X | IME=%d IE=%02X IF=%02X | LCDC=%02X STAT=%02X LY=%d dot=%d\n",
+					pc_before, cpu_current_op_code,
+					memory_bus_read(pc_before + 1), memory_bus_read(pc_before + 2),
+					cpu_registers.af, cpu_registers.bc, cpu_registers.de, cpu_registers.hl, cpu_registers.sp,
+					interrupt_master_enable ? 1 : 0, memory[ADDR_IO_IE], memory[ADDR_IO_IF],
+					memory[0xFF40], memory[0xFF41], memory[0xFF44], ppu_scanline_dot);
+				trace_lines++;
+				if (cpu_halt_count != 0) {
+					debug_log("  HALT entered\n");
+				}
+			}
+		}
+		else {
+			core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
+		}
+
+		if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
+			cpu_debug_instructions = false;
+			debug_log_close_file();
+		}
+
+		const bool halted_before_isr = cpu_halt_count != 0;
+		const uint16_t pc_before_isr = cpu_registers.pc;
+		interrupt_service_routine();
 
 		if (trace_state == 1) {
-			debug_log("%04X: %02X %02X %02X | AF=%04X BC=%04X DE=%04X HL=%04X SP=%04X | IME=%d IE=%02X IF=%02X | LCDC=%02X STAT=%02X LY=%d dot=%d\n",
-				pc_before, cpu_current_op_code,
-				memory_bus_read(pc_before + 1), memory_bus_read(pc_before + 2),
-				cpu_registers.af, cpu_registers.bc, cpu_registers.de, cpu_registers.hl, cpu_registers.sp,
-				interrupt_master_enable ? 1 : 0, memory[ADDR_IO_IE], memory[ADDR_IO_IF],
-				memory[0xFF40], memory[0xFF41], memory[0xFF44], ppu_scanline_dot);
-			trace_lines++;
-			if (cpu_halt_count != 0) {
-				debug_log("  HALT entered\n");
+			if (halted_before_isr && cpu_halt_count == 0) {
+				debug_log("  HALT left: IE=%02X IF=%02X LY=%d dot=%d\n",
+					memory[ADDR_IO_IE], memory[ADDR_IO_IF], memory[0xFF44], ppu_scanline_dot);
+			}
+			if (cpu_registers.pc != pc_before_isr) {
+				debug_log("  INTERRUPT -> %04X (from %04X) LY=%d dot=%d\n",
+					cpu_registers.pc, pc_before_isr, memory[0xFF44], ppu_scanline_dot);
 			}
 		}
 	}
-	else {
-		core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
-	}
-
-	if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
-		cpu_debug_instructions = false;
-		debug_log_close_file();
-	}
-
-	const bool halted_before_isr = cpu_halt_count != 0;
-	const uint16_t pc_before_isr = cpu_registers.pc;
-	interrupt_service_routine();
-
-	if (trace_state == 1) {
-		if (halted_before_isr && cpu_halt_count == 0) {
-			debug_log("  HALT left: IE=%02X IF=%02X LY=%d dot=%d\n",
-				memory[ADDR_IO_IE], memory[ADDR_IO_IF], memory[0xFF44], ppu_scanline_dot);
+	else 
+	{
+		if (cpu_halt_count == 0) {
+			cpu_fetch();
+			cpu_execute();
+			cpu_instruction_counter++;
 		}
-		if (cpu_registers.pc != pc_before_isr) {
-			debug_log("  INTERRUPT -> %04X (from %04X) LY=%d dot=%d\n",
-				cpu_registers.pc, pc_before_isr, memory[0xFF44], ppu_scanline_dot);
+		else {
+			core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
 		}
+		if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
+			cpu_debug_instructions = false;
+			debug_log_close_file();
+		}
+		interrupt_service_routine();
 	}
 }
-/*
-void cpu_tick() {
-	if (cpu_halt_count == 0) {
-		cpu_fetch();
-		cpu_execute();
-		cpu_instruction_counter++;
-	} else {
-		core_advance_cpu_clocks(4); // Halted CPU still advances clock cycles until an interrupt occurs or it is resumed
-	}
 
-	if (cpu_instruction_counter > 10000 && cpu_debug_instructions) {
-		cpu_debug_instructions = false;
-		debug_log_close_file();
-	}
-
-
-	interrupt_service_routine();
-}
-*/
 
 void cpu_fetch() {
 

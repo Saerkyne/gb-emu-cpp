@@ -38,7 +38,10 @@ void interrupt_jump() {
     {
 		destination = 0x0000; // If no interrupts are enabled or requested, jump to address 0x0000
         // Don't clear the IF byte
-		debug_log("No interrupts enabled or requested, jumping to 0x0000\n");
+        if (debug_mode)
+        {
+            debug_log("No interrupts enabled or requested, jumping to 0x0000\n");
+        }
     }
     else
     {
@@ -46,31 +49,46 @@ void interrupt_jump() {
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 0);
             destination = INTERRUPT_HANDLER_V_BLANK;
-			debug_log("V-Blank interrupt triggered, jumping to 0x%04X\n", destination);
+            if (debug_mode)
+            {
+                debug_log("V-Blank interrupt triggered, jumping to 0x%04X\n", destination);
+            }
 		}
 		else if (CHECK_BIT(memory[ADDR_IO_IE], 1) && CHECK_BIT(memory[ADDR_IO_IF], 1))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 1);
             destination = INTERRUPT_HANDLER_LCD_STATUS;
-			debug_log("LCD Status interrupt triggered, jumping to 0x%04X\n", destination);
+            if (debug_mode)
+			{
+				debug_log("LCD Status interrupt triggered, jumping to 0x%04X\n", destination);
+			}
 		}
 		else if (CHECK_BIT(memory[ADDR_IO_IE], 2) && CHECK_BIT(memory[ADDR_IO_IF], 2))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 2);
             destination = INTERRUPT_HANDLER_TIMER;
-			debug_log("Timer interrupt triggered, jumping to 0x%04X\n", destination);
+			if (debug_mode)
+			{
+				debug_log("Timer interrupt triggered, jumping to 0x%04X\n", destination);
+			}
 		}
 		else if (CHECK_BIT(memory[ADDR_IO_IE], 3) && CHECK_BIT(memory[ADDR_IO_IF], 3))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 3);
             destination = INTERRUPT_HANDLER_SERIAL;
-			debug_log("Serial interrupt triggered, jumping to 0x%04X\n", destination);
+			if (debug_mode)
+			{
+				debug_log("Serial interrupt triggered, jumping to 0x%04X\n", destination);
+			}
 		}
 		else if (CHECK_BIT(memory[ADDR_IO_IE], 4) && CHECK_BIT(memory[ADDR_IO_IF], 4))
 		{
 			CLEAR_BIT(memory[ADDR_IO_IF], 4);
             destination = INTERRUPT_HANDLER_JOYPAD;
-			debug_log("Joypad interrupt triggered, jumping to 0x%04X\n", destination);
+			if (debug_mode)
+			{
+				debug_log("Joypad interrupt triggered, jumping to 0x%04X\n", destination);
+			}
 		}
     }
     cpu_registers.sp--;
