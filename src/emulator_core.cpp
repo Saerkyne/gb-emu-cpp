@@ -270,12 +270,11 @@ void core_advance_cpu_clocks(uint8_t clocks)
 void core_init_gfx_contexts()
 {
 	const SDL_Color COLOR_BLACK = { 0, 0, 0, 0 };
-	const int DEBUG_TEXTURE_SIZE = 512;
-
-	gfx_debug_ctx = gfx_init(DEBUG_TEXTURE_SIZE, DEBUG_TEXTURE_SIZE, "Debug");
+#if CORE_RENDER_PPU_DEBUG || CORE_RENDER_APU_DEBUG
+	gfx_debug_ctx = gfx_init(512, 512, "Debug");
 	gfx_clear(gfx_debug_ctx, COLOR_BLACK);
 	gfx_update(gfx_debug_ctx);
-
+#endif
 	gfx_render_ctx = gfx_init(LCD_PIXELS_WIDTH * PPU_RENDER_SCALE, LCD_PIXELS_HEIGHT * PPU_RENDER_SCALE, "GoodBoy");
 	gfx_clear(gfx_render_ctx, COLOR_BLACK);
 	gfx_update(gfx_render_ctx);

@@ -2,6 +2,9 @@
 #include "gfx.h"
 #include <stdint.h>
 
+#define CORE_RENDER_PPU_DEBUG 0
+#define CORE_RENDER_APU_DEBUG 1
+
 extern gfx_context* gfx_debug_ctx;
 extern gfx_context* gfx_render_ctx;
 extern uint32_t core_clock_counter; // Global clock counter for the emulator core

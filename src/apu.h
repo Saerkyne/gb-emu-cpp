@@ -8,15 +8,24 @@
 
 #define APU_STATUS_SQ1 (audio_registers->nr5[2] & 0b00000001)
 #define APU_STATUS_SQ2 ((audio_registers->nr5[2] & 0b00000010) >> 1)
-#define APU_ENABLESQ1_LEFT ((audio_registers->nr5[1] & 0b00010000) >> 4)
-#define APU_ENABLESQ1_RIGHT (audio_registers->nr5[1] & 0b00000001)
-#define APU_ENABLESQ2_LEFT ((audio_registers->nr5[1] & 0b00100000) >> 5)
-#define APU_ENABLESQ2_RIGHT ((audio_registers->nr5[1] & 0b00000010) >> 1)
+#define APU_STATUS_WAVE ((audio_registers->nr5[2] & 0b00000100) >> 2)
+#define APU_STATUS_NOISE ((audio_registers->nr5[2] & 0b00001000) >> 3)
+
+#define APU_ENABLE_SQ1_LEFT ((audio_registers->nr5[1] & 0b00010000) >> 4)
+#define APU_ENABLE_SQ1_RIGHT (audio_registers->nr5[1] & 0b00000001)
+#define APU_ENABLE_SQ2_LEFT ((audio_registers->nr5[1] & 0b00100000) >> 5)
+#define APU_ENABLE_SQ2_RIGHT ((audio_registers->nr5[1] & 0b00000010) >> 1)
+#define APU_ENABLE_WAVE_LEFT ((audio_registers->nr5[1] & 0b01000000) >> 6)
+#define APU_ENABLE_WAVE_RIGHT ((audio_registers->nr5[1] & 0b00000100) >> 2)
+#define APU_ENABLE_NOISE_LEFT ((audio_registers->nr5[1] & 0b10000000) >> 7)
+#define APU_ENABLE_NOISE_RIGHT ((audio_registers->nr5[1] & 0b00001000) >> 3)
 
 #define APU_POWER_STATUS (audio_registers->nr5[2] >> 7)
 
 #define SET_APU_STATUS_SQ1(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11111110) | (value))
-#define SET_APU_STATUS_SQ2(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11111101) | (value << 1))
+#define SET_APU_STATUS_SQ2(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11111101) | ((value) << 1))
+#define SET_APU_STATUS_WAVE(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11111011) | ((value) << 2))
+#define SET_APU_STATUS_NOISE(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11110111) | ((value) << 3))
 
 #define SQ1_DAC_POWER ((audio_registers->nr1[2] >> 4) > 0)
 #define SQ1_SWEEP_PERIOD ((audio_registers->nr1[0] & 0b01110000) >> 4)
@@ -47,6 +56,29 @@
 #define SQ2_FREQUENCY ((SQ2_FREQUENCY_MSB << 8) | SQ2_FREQUENCY_LSB)
 #define SET_SQ2_TRIGGER(value) audio_registers->nr2[4] = ((audio_registers->nr2[4] & ~(1 << 7)) | (value << 7))
 #define SET_SQ2_LENGTH_LOAD(value) audio_registers->nr2[1] = ((audio_registers->nr2[1] & 0b11000000) | value)
+
+#define WAVE_DAC_POWER ((audio_registers->nr3[0] & 0b10000000) >> 7)
+#define WAVE_LENGTH_LOAD (audio_registers->nr3[1])
+#define WAVE_VOLUME_CODE ((audio_registers->nr3[2] & 0b01100000) >> 5)
+#define WAVE_FREQUENCY_LSB (audio_registers->nr3[3])
+#define WAVE_TRIGGER ((audio_registers->nr3[4] & 0b10000000) >> 7)
+#define WAVE_LENGTH_ENABLE ((audio_registers->nr3[4] & 0b01000000) >> 6)
+#define WAVE_FREQUENCY_MSB (audio_registers->nr3[4] & 0b00000111)
+#define WAVE_FREQUENCY ((WAVE_FREQUENCY_MSB << 8) | WAVE_FREQUENCY_LSB)
+#define SET_WAVE_TRIGGER(value) audio_registers->nr3[4] = ((audio_registers->nr3[4] & ~(1 << 7)) | (value << 7))
+#define SET_WAVE_LENGTH_LOAD(value) audio_registers->nr3[1] = value
+
+#define NOISE_LENGTH_LOAD (audio_registers->nr4[1] & 0b00111111)
+#define NOISE_ENV_VOLUME (audio_registers->nr4[2] >> 4)
+#define NOISE_ENV_ADD ((audio_registers->nr4[2] & 0b00001000) >> 3)
+#define NOISE_ENV_PERIOD (audio_registers->nr4[2] & 0b00000111)
+#define NOISE_CLOCK_SHIFT (audio_registers->nr4[3] >> 4)
+#define NOISE_WIDTH_MODE ((audio_registers->nr4[3] & 0b00001000) >> 3)
+#define NOISE_DIVISOR_CODE (audio_registers->nr4[3] & 0b00000111)
+#define NOISE_TRIGGER (audio_registers->nr4[4] >> 7)
+#define NOISE_LENGTH_ENABLE ((audio_registers->nr4[4] & 0b01000000) >> 6)
+#define SET_NOISE_TRIGGER(value) audio_registers->nr4[4] = ((audio_registers->nr4[4] & ~(1 << 7)) | (value << 7))
+#define SET_NOISE_LENGTH_LOAD(value) (audio_registers->nr4[1] = value & 0b00111111)
 
 
 struct audio_register_set {

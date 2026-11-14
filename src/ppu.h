@@ -3,6 +3,8 @@
 
 const uint32_t LCD_PIXELS_WIDTH = 160;
 const uint32_t LCD_PIXELS_HEIGHT = 144;
+const uint32_t VRAM_DEBUG_WIDTH = 512;
+const uint32_t VRAM_DEBUG_HEIGHT = 512;
 const uint32_t PPU_RENDER_SCALE = 3;
 
 const uint8_t LCDS_MODE_0_H_BLANK = 0;
