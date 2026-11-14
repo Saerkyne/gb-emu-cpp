@@ -9,6 +9,7 @@ const uint32_t APU_OUT_SAMPLES_PER_FRAME = (APU_SAMPLE_RATE / 60);
 const float APU_OUT_DIVISOR = (float)APU_OUT_SAMPLES_PER_FRAME / APU_SAMPLES_PER_FRAME;
 
 uint8_t sq1_sample_latest = 0;
+uint8_t sq2_sample_latest = 0;
 uint32_t apu_out_sample_index = 0;
 float apu_out_samples[APU_OUT_SAMPLES_PER_FRAME * 2]; // Stereo output buffer
 float apu_out_accumulator = 0.f;
@@ -39,6 +40,12 @@ uint8_t sq1_env_counter = 0;
 uint8_t sq1_sweep_counter = 0;
 uint16_t sq1_sweep_frequency = 0;
 bool sq1_sweep_enabled = false;
+
+uint16_t sq2_freq_counter = 0;
+uint8_t sq2_length_counter = 0;
+uint8_t sq2_phase = 0;
+uint8_t sq2_env_volume = 0;
+uint8_t sq2_env_counter = 0;
 
 uint8_t wave_table[16] = { 0x84, 0x40, 0x43, 0xAA, 0x2D, 0x78, 0x92, 0x3C, 0x60, 0x59, 0xB0, 0x2E, 0xDA };
 
@@ -95,6 +102,13 @@ void apu_tick(uint8_t clocks)
 			sq1_phase = (sq1_phase + 1) % 8;
 		}
 
+		sq2_freq_counter -= 1;
+		if (sq2_freq_counter == 0)
+		{
+			sq2_freq_counter = 4 * (2048 - SQ2_FREQUENCY);
+			sq2_phase = (sq2_phase + 1) % 8;
+		}
+
 		if (i % 4 == 0) // 1Mhz
 		{
 			if (APU_STATUS_SQ1)
@@ -106,31 +120,45 @@ void apu_tick(uint8_t clocks)
 			{
 				sq1_sample_latest = 0;
 			}
-		}
 
-		apu_out_accumulator += APU_OUT_DIVISOR;
-		if (apu_out_accumulator >= 1.f)
-		{
-			apu_out_accumulator -= 1.f;
-			float sampleL = 0.f;
-			float sampleR = 0.f;
-
-			const float sq1_sample = TO_FLOAT_SAMPLE(sq1_sample_latest);
-
-			if (APU_ENABLESQ1_LEFT) sampleL += sq1_sample;
-			if (APU_ENABLESQ1_RIGHT) sampleR += sq1_sample;
-
-			const float volL = (float)APU_VOLUME_LEFT / 7.f;
-			const float volR = (float)APU_VOLUME_RIGHT / 7.f;
-			apu_out_samples[apu_out_sample_index++] = (sampleL * volL / 4.f);
-			apu_out_samples[apu_out_sample_index++] = (sampleR * volR / 4.f);
-
-			if (apu_out_sample_index == 1600)
+			if (APU_STATUS_SQ2)
 			{
-				apu_on_frame_end();
-				apu_out_sample_index = 0;
+				const uint8_t duty_index = (SQ2_DUTY * 8) + sq2_phase;
+				sq2_sample_latest = square_duty_cycles[duty_index] * sq2_env_volume;
 			}
-		}		
+			else
+			{
+				sq2_sample_latest = 0;
+			}
+
+			apu_out_accumulator += APU_OUT_DIVISOR;
+			if (apu_out_accumulator >= 1.f)
+			{
+				apu_out_accumulator -= 1.f;
+				float sampleL = 0.f;
+				float sampleR = 0.f;
+
+				const float sq1_sample = TO_FLOAT_SAMPLE(sq1_sample_latest);
+				const float sq2_sample = TO_FLOAT_SAMPLE(sq2_sample_latest);
+
+				if (APU_ENABLESQ1_LEFT) sampleL += sq1_sample;
+				if (APU_ENABLESQ1_RIGHT) sampleR += sq1_sample;
+
+				if (APU_ENABLESQ2_LEFT) sampleL += sq2_sample;
+				if (APU_ENABLESQ2_RIGHT) sampleR += sq2_sample;
+
+				const float volL = (float)APU_VOLUME_LEFT / 7.f;
+				const float volR = (float)APU_VOLUME_RIGHT / 7.f;
+				apu_out_samples[apu_out_sample_index++] = (sampleL * volL / 4.f);
+				apu_out_samples[apu_out_sample_index++] = (sampleR * volR / 4.f);
+
+				if (apu_out_sample_index == 1600)
+				{
+					apu_on_frame_end();
+					apu_out_sample_index = 0;
+				}
+			}	
+		}			
 	}
 }
 
@@ -152,6 +180,16 @@ void apu_clock_sq1_length()
 	if (sq1_length_counter == 0)
 	{
 		SET_APU_STATUS_SQ1(0);
+	}
+}
+
+void apu_clock_sq2_length()
+{
+	sq2_length_counter--;
+	SET_SQ2_LENGTH_LOAD(sq2_length_counter);
+	if (sq2_length_counter == 0)
+	{
+		SET_APU_STATUS_SQ2(0);
 	}
 }
 
@@ -188,6 +226,10 @@ void apu_counter_tick()
 		{
 			apu_clock_sq1_length();
 		}
+		if (SQ2_LENGTH_ENABLE && sq2_length_counter > 0)
+		{
+			apu_clock_sq2_length();
+		}
 	}
 	if (APU_STATUS_SQ1)
 	{
@@ -216,6 +258,25 @@ void apu_counter_tick()
 				sq1_sweep_counter = SQ1_SWEEP_PERIOD;
 				calculate_sq1_sweep(true);
 				calculate_sq1_sweep(false);
+			}
+		}
+	}
+	if (APU_STATUS_SQ2)
+	{
+		if (apu_clock_counter == 7 && SQ2_ENV_PERIOD > 0)
+		{
+			sq2_env_counter -= 1;
+			if (sq2_env_counter == 0)
+			{
+				sq2_env_counter = SQ2_ENV_PERIOD;
+				if (SQ2_ENV_ADD && sq2_env_volume < 15)
+				{
+					sq2_env_volume += 1;
+				}
+				else if (!SQ2_ENV_ADD && sq2_env_volume > 0)
+				{
+					sq2_env_volume -= 1;
+				}
 			}
 		}
 	}
@@ -254,7 +315,7 @@ uint8_t apu_read(uint16_t addr)
 		return wave_table[samples_idx];
 	}
 
-	return 0;
+	return 0xFF;
 }
 
 void apu_write(uint16_t addr, uint8_t value)
@@ -269,6 +330,7 @@ void apu_write(uint16_t addr, uint8_t value)
 		return;
 	}
 
+	// Square 1
 	if (addr == 0xFF10)
 	{
 		audio_registers->nr1[0] = value;
@@ -338,6 +400,73 @@ void apu_write(uint16_t addr, uint8_t value)
 		else if (SQ1_LENGTH_LOAD > 0 && length_became_enabled && is_first_half_of_frame_clock)
 		{
 			apu_clock_sq1_length();
+		}
+	}
+
+	// Square 2
+	if (addr == 0xFF15)
+	{
+		audio_registers->nr2[0] = value;
+	}
+	else if (addr == 0xFF16)
+	{
+		audio_registers->nr2[1] = value;
+		if (SQ2_LENGTH_LOAD == 0)
+		{
+			sq2_length_counter = 64;
+			SET_SQ2_LENGTH_LOAD(63);
+		}
+		else
+		{
+			sq2_length_counter = 64 - (value & 0b00111111);
+			SET_SQ2_LENGTH_LOAD(sq2_length_counter);
+		}
+	}
+	else if (addr == 0xFF17)
+	{
+		audio_registers->nr2[2] = value;
+		sq2_env_volume = SQ2_ENV_VOLUME;
+		sq2_env_counter = SQ2_ENV_PERIOD > 0 ? SQ2_ENV_PERIOD : 8;
+		if (SQ2_ENV_VOLUME == 0)
+		{
+			SET_APU_STATUS_SQ2(0);
+		}
+	}
+	else if (addr == 0xFF18)
+	{
+		audio_registers->nr2[3] = value;
+	}
+	else if (addr == 0xFF19)
+	{
+		const bool length_enable_prev = SQ2_LENGTH_ENABLE;
+		audio_registers->nr2[4] = value;
+		const bool length_became_enabled = !length_enable_prev && SQ2_LENGTH_ENABLE;
+		const bool is_first_half_of_frame_clock = (apu_clock_counter % 2 == 0);
+		const bool triggered = SQ2_TRIGGER;
+		if (triggered)
+		{
+			SET_SQ2_TRIGGER(0);
+			sq2_freq_counter = 4 * (2048 - SQ2_FREQUENCY);
+			sq2_env_volume = SQ2_ENV_VOLUME;
+			sq2_env_counter = SQ2_ENV_PERIOD > 0 ? SQ2_ENV_PERIOD : 8;
+			
+			if (SQ2_LENGTH_LOAD == 0)
+			{
+				sq2_length_counter = 64;
+				SET_SQ2_LENGTH_LOAD(63);
+			}
+
+			const bool sq2_volume_enable = SQ2_ENV_VOLUME > 0 || SQ2_ENV_ADD;
+			const bool sq2_length_enable = (!SQ2_LENGTH_ENABLE || (SQ2_LENGTH_ENABLE && SQ2_LENGTH_LOAD));
+			SET_APU_STATUS_SQ2(sq2_volume_enable && sq2_length_enable);
+			if (length_became_enabled)
+			{
+				apu_clock_sq2_length();
+			}
+		}
+		else if (SQ2_LENGTH_LOAD > 0 && length_became_enabled && is_first_half_of_frame_clock)
+		{
+			apu_clock_sq2_length();
 		}
 	}
 

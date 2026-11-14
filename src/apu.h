@@ -7,12 +7,16 @@
 #define APU_VOLUME_RIGHT (audio_registers->nr5[0] & 0b00000111)
 
 #define APU_STATUS_SQ1 (audio_registers->nr5[2] & 0b00000001)
+#define APU_STATUS_SQ2 ((audio_registers->nr5[2] & 0b00000010) >> 1)
 #define APU_ENABLESQ1_LEFT ((audio_registers->nr5[1] & 0b00010000) >> 4)
 #define APU_ENABLESQ1_RIGHT (audio_registers->nr5[1] & 0b00000001)
+#define APU_ENABLESQ2_LEFT ((audio_registers->nr5[1] & 0b00100000) >> 5)
+#define APU_ENABLESQ2_RIGHT ((audio_registers->nr5[1] & 0b00000010) >> 1)
 
 #define APU_POWER_STATUS (audio_registers->nr5[2] >> 7)
 
 #define SET_APU_STATUS_SQ1(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11111110) | (value))
+#define SET_APU_STATUS_SQ2(value) audio_registers->nr5[2] = ((audio_registers->nr5[2] & 0b11111101) | (value << 1))
 
 #define SQ1_DAC_POWER ((audio_registers->nr1[2] >> 4) > 0)
 #define SQ1_SWEEP_PERIOD ((audio_registers->nr1[0] & 0b01110000) >> 4)
@@ -30,6 +34,20 @@
 #define SQ1_FREQUENCY ((SQ1_FREQUENCY_MSB << 8) | SQ1_FREQUENCY_LSB)
 #define SET_SQ1_TRIGGER(value) audio_registers->nr1[4] = ((audio_registers->nr1[4] & ~(1 << 7)) | (value << 7))
 #define SET_SQ1_LENGTH_LOAD(value) audio_registers->nr1[1] = ((audio_registers->nr1[1] & 0b11000000) | value)
+
+#define SQ2_DUTY ((audio_registers->nr2[0] & 0b11000000) >> 6)
+#define SQ2_LENGTH_LOAD ((audio_registers->nr2[1] & 0b00111111))
+#define SQ2_ENV_VOLUME (audio_registers->nr2[2] >> 4)
+#define SQ2_ENV_ADD ((audio_registers->nr2[2] & 0b00001000) >> 3)
+#define SQ2_ENV_PERIOD (audio_registers->nr2[2] & 0b00000111)
+#define SQ2_FREQUENCY_LSB (audio_registers->nr2[3])
+#define SQ2_TRIGGER ((audio_registers->nr2[4] & 0b10000000) >> 7)
+#define SQ2_LENGTH_ENABLE ((audio_registers->nr2[4] & 0b01000000) >> 6)
+#define SQ2_FREQUENCY_MSB (audio_registers->nr2[4] & 0b00000111)
+#define SQ2_FREQUENCY ((SQ2_FREQUENCY_MSB << 8) | SQ2_FREQUENCY_LSB)
+#define SET_SQ2_TRIGGER(value) audio_registers->nr2[4] = ((audio_registers->nr2[4] & ~(1 << 7)) | (value << 7))
+#define SET_SQ2_LENGTH_LOAD(value) audio_registers->nr2[1] = ((audio_registers->nr2[1] & 0b11000000) | value)
+
 
 struct audio_register_set {
 	uint8_t nr1[5]; // NR10, NR11, NR12, NR13, NR14
